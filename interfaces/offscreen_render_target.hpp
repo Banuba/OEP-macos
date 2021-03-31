@@ -2,7 +2,7 @@
 
 #include <bnb/types/base_types.hpp>
 
-#include "offscreen_effect_player.hpp"
+#include "formats.hpp"
 
 namespace bnb::interfaces
 {
@@ -62,12 +62,19 @@ namespace bnb::interfaces
         virtual bnb::data_t read_current_buffer() = 0;
 
         /**
-         * In thread with active texture get CVPixelBufferRef in nv12 from Offscreen_render_target.
+         * Get CVPixelBufferRef from Offscreen_render_target.
+         * CVPixelBufferRef can keep rgba, nv12 or texture.
+         * If we get rgba the type of CVPixelBufferRef will be bgra. Macos defined kCVPixelFormatType_32RGBA
+         * but not supported and we have to choose a different type.
+         * Method must be called from render thread.
          * 
-         * @param a void*. void* keep CVPixelBufferRef in nv12
+         * @param format image format of ouput
+         * @return a void*. void* keep CVPixelBufferRef
          * 
-         * Example get_pixel_buffer()
+         * Example get_image(bnb::image_format::texture)
          */
-        virtual void* get_pixel_buffer() = 0;
+        virtual void* get_image(image_format format) = 0;
     };
 } // bnb::interfaces
+
+using iort_sptr = std::shared_ptr<bnb::interfaces::offscreen_render_target>;

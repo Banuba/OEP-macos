@@ -2,8 +2,8 @@
 //  ViewController.swift
 //  OEP_macos
 //
-//  Created by Vadim Voloshanov on 3/10/21.
-//  Copyright © 2021 Vadim Voloshanov. All rights reserved.
+//  Created by Banuba on 3/10/21.
+//  Copyright © 2021 Banuba. All rights reserved.
 //
 
 import AppKit
@@ -27,7 +27,7 @@ class ViewController: NSViewController, AVCaptureVideoDataOutputSampleBufferDele
     private let renderHeight: UInt = 720
     private var effectLoaded = false
     private let token = <<#place your token here#>>
-    
+
     override func viewDidLoad() {
         super.viewDidLoad()
         effectPlayerInit()
@@ -48,7 +48,7 @@ class ViewController: NSViewController, AVCaptureVideoDataOutputSampleBufferDele
         oep?.loadEffect(effectPath)
         effectLoaded = true
     }
-    
+
     private func unloadEffect(effectPath: String) {
         oep?.unloadEffect()
         effectLoaded = false
@@ -69,13 +69,13 @@ class ViewController: NSViewController, AVCaptureVideoDataOutputSampleBufferDele
             input = nil
             print(error!.localizedDescription)
         }
-        
+
         guard let input = self.input else { return }
-        
+
         if error == nil && session.canAddInput(input) {
             session.addInput(input)
         }
-        
+
         output.alwaysDiscardsLateVideoFrames = true
         output.videoSettings = [kCVPixelBufferPixelFormatTypeKey : kCVPixelFormatType_420YpCbCr8BiPlanarFullRange] as [String : Any]
         output.setSampleBufferDelegate(self, queue: DispatchQueue.global())
@@ -88,7 +88,7 @@ class ViewController: NSViewController, AVCaptureVideoDataOutputSampleBufferDele
         session.commitConfiguration()
         session.startRunning()
     }
-    
+
     func paintPixelBuffer(_ pixelBuffer: CVPixelBuffer?) {
         if let resultPixelBuffer = pixelBuffer {
             var cgImage: CGImage?
@@ -99,7 +99,7 @@ class ViewController: NSViewController, AVCaptureVideoDataOutputSampleBufferDele
 
             let width = CVPixelBufferGetWidth(resultPixelBuffer)
             let height = CVPixelBufferGetHeight(resultPixelBuffer)
-            
+
             let image = NSImage(cgImage: cgImageSafe, size: NSSize(width: width, height: height))
 
             DispatchQueue.main.async {
@@ -114,9 +114,6 @@ class ViewController: NSViewController, AVCaptureVideoDataOutputSampleBufferDele
         if (self.effectLoaded) {
             CVPixelBufferLockBaseAddress(imageBuffer, [])
 
-            let width = CVPixelBufferGetWidth(imageBuffer)
-            let height = CVPixelBufferGetHeight(imageBuffer)
-
             oep?.processImage(imageBuffer, completion: {(resPixelBuffer) in
                 CVPixelBufferUnlockBaseAddress(imageBuffer, [])
                 self.paintPixelBuffer(resPixelBuffer)
@@ -127,4 +124,3 @@ class ViewController: NSViewController, AVCaptureVideoDataOutputSampleBufferDele
         }
     }
 }
-

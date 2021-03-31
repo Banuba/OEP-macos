@@ -1,20 +1,20 @@
 #include "offscreen_effect_player.hpp"
-#include "offscreen_render_target.hpp"
+#include "offscreen_render_target.h"
 
 #include <iostream>
 
 namespace bnb
 {
-    ioep_sptr offscreen_effect_player::create(
+    ioep_sptr interfaces::offscreen_effect_player::create(
         const std::vector<std::string>& path_to_resources, const std::string& client_token,
         int32_t width, int32_t height, bool manual_audio, std::optional<iort_sptr> ort = std::nullopt)
     {
         if (!ort.has_value()) {
-            ort = std::make_shared<offscreen_render_target>(width, height);
+            ort = std::make_shared<bnb::offscreen_render_target>(width, height);
         }
 
         // we use "new" instead of "make_shared" because the constructor in "offscreen_effect_player" is private
-        return oep_sptr(new offscreen_effect_player(
+        return oep_sptr(new bnb::offscreen_effect_player(
                 path_to_resources, client_token, width, height, manual_audio, *ort));
     }
 
@@ -143,17 +143,17 @@ namespace bnb
         m_scheduler.enqueue(task);
     }
 
-    void offscreen_effect_player::read_pixel_buffer(oep_image_ready_pb_cb callback)
+    void offscreen_effect_player::read_pixel_buffer(oep_image_ready_pb_cb callback, interfaces::image_format format)
     {
         if (std::this_thread::get_id() == render_thread_id) {
-            callback(m_ort->get_pixel_buffer());
+            callback(m_ort->get_image(format));
             return;
         }
 
         oep_wptr this_ = shared_from_this();
-        auto task = [this_, callback]() {
+        auto task = [this_, callback, format]() {
             if (auto this_sp = this_.lock()) {
-                callback(this_sp->m_ort->get_pixel_buffer());
+                callback(this_sp->m_ort->get_image(format));
             }
         };
         m_scheduler.enqueue(task);

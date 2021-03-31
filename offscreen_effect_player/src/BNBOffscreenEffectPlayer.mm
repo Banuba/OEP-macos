@@ -6,7 +6,7 @@
 #import "BNBFullImageData+Private.h"
 
 #include "offscreen_effect_player.hpp"
-#include "offscreen_render_target.hpp"
+#include "offscreen_render_target.h"
 
 
 @implementation BNBOffscreenEffectPlayer
@@ -49,7 +49,7 @@
     __block ::bnb::full_image_t image = bnb::objcpp::full_image_data::toCpp(inputData);
 
     auto image_ptr = std::make_shared<bnb::full_image_t>(std::move(image));
-    auto get_pixel_buffer_callback = [image_ptr, completion = Block_copy(completion)](std::optional<pb_sptr> pb) {
+    auto get_pixel_buffer_callback = [image_ptr, completion = Block_copy(completion)](std::optional<ipb_sptr> pb) {
         if (pb.has_value()) {
             auto render_callback = [completion = Block_copy(completion)](void* cv_pixel_buffer_ref) {
                 if (cv_pixel_buffer_ref != nullptr) {
@@ -63,7 +63,7 @@
                     }
                 }
             };
-            (*pb)->get_pixel_buffer(render_callback);
+            (*pb)->get_image(render_callback, bnb::interfaces::image_format::texture);
         }
     };
     std::optional<bnb::interfaces::orient_format> target_orient{ { bnb::camera_orientation::deg_0, true } };
