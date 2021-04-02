@@ -89,7 +89,7 @@ class ViewController: NSViewController, AVCaptureVideoDataOutputSampleBufferDele
         session.startRunning()
     }
 
-    func paintPixelBuffer(_ pixelBuffer: CVPixelBuffer?) {
+    func renderPixelBuffer(_ pixelBuffer: CVPixelBuffer?) {
         if let resultPixelBuffer = pixelBuffer {
             var cgImage: CGImage?
 
@@ -116,11 +116,11 @@ class ViewController: NSViewController, AVCaptureVideoDataOutputSampleBufferDele
 
             oep?.processImage(imageBuffer, completion: {(resPixelBuffer) in
                 CVPixelBufferUnlockBaseAddress(imageBuffer, [])
-                self.paintPixelBuffer(resPixelBuffer)
+                self.renderPixelBuffer(resPixelBuffer)
             })
         }
         else {
-            paintPixelBuffer(imageBuffer)
+            renderPixelBuffer(imageBuffer)
         }
     }
 }
