@@ -34,14 +34,14 @@ Contributions are what make the open source community such an amazing place to l
 
 # Sample structure
 
+- **interfaces** - offscreen effect player interfaces
 - **offscreen_effect_player** - is a wrapper for effect_player. It allows you to use your own implementation for offscreen_render_target
 - **offscreen_render_target** - is an implementation option for the offscreen_render_target interface. Allows to prepare gl framebuffers and textures for receiving a frame from gpu, receive bytes of the processed frame from the gpu and pass them to the cpu, as well as, if necessary, set the orientation for the received frame. This implementation uses GLFW to work with gl context
 - **libraries**
     - **utils**
         - **ogl_utils** - contains helper classes to work with Open GL
         - **utils** - сontains common helper classes such as thread_pool
-- **interfaces** - offscreen effect player interfaces
-- **main.cpp** - contains the main function implementation, demonstrating basic pipeline for frame processing to apply effect offscreen
+- **ViewController.swift** - contains a pipeline of frames received from the camera and sent for processing the effect and the subsequent receipt of processed frames
 
 # Note
 
