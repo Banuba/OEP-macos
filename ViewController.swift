@@ -26,12 +26,12 @@ class ViewController: NSViewController, AVCaptureVideoDataOutputSampleBufferDele
     private let renderWidth: UInt = 1280
     private let renderHeight: UInt = 720
     private var effectLoaded = false
-    private let token = <<#place your token here#>>
+    private let token = <#place your token here#>
 
     override func viewDidLoad() {
         super.viewDidLoad()
         effectPlayerInit()
-        loadEffect(effectPath: "effects/test_BG")
+        loadEffect(effectPath: "test_BG")
         setUpCamera()
     }
 
@@ -41,7 +41,10 @@ class ViewController: NSViewController, AVCaptureVideoDataOutputSampleBufferDele
     }
 
     private func effectPlayerInit() {
-        oep = BNBOffscreenEffectPlayer.init(width: renderWidth, height: renderHeight, manualAudio: false, token: token as String)
+        let dirs = [Bundle.main.bundlePath + "/Contents/Frameworks/BanubaEffectPlayer.framework/Resources/bnb-resources",
+                    Bundle.main.bundlePath + "/Contents/Resources/effects"]
+
+        oep = BNBOffscreenEffectPlayer.init(width: renderWidth, height: renderHeight, manualAudio: false, token: token as String, resourcePaths: dirs)
     }
 
     private func loadEffect(effectPath: String) {

@@ -1,2 +1,1 @@
-add_subdirectory(objcpp_helper)
 add_subdirectory(utils)
