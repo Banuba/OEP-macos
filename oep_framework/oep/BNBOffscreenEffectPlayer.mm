@@ -27,13 +27,18 @@
 - (instancetype)initWithWidth:(NSUInteger)width
                        height:(NSUInteger)height
                   manualAudio:(BOOL)manual
-                        token:(NSString*)token;
+                        token:(NSString*)token
+                resourcePaths:(NSArray<NSString *> *)resourcePaths;
 {
     _width = width;
     _height = height;
 
     std::optional<iort_sptr> ort = std::make_shared<bnb::offscreen_render_target>(width, height);
-    oep = bnb::offscreen_effect_player::create({ BNB_RESOURCES_FOLDER }, std::string([token UTF8String]), width, height, manual, ort);
+    std::vector<std::string> paths;
+    for (id object in resourcePaths) {
+        paths.push_back(std::string([(NSString*)object UTF8String]));
+    }
+    oep = bnb::offscreen_effect_player::create(paths, std::string([token UTF8String]), width, height, manual, ort);
 
     return self;
 }
@@ -49,11 +54,11 @@
     __block ::bnb::full_image_t image = bnb::objcpp::full_image_data::toCpp(inputData);
 
     auto image_ptr = std::make_shared<bnb::full_image_t>(std::move(image));
-    auto get_pixel_buffer_callback = [image_ptr, completion = Block_copy(completion)](std::optional<ipb_sptr> pb) {
+    auto get_pixel_buffer_callback = [image_ptr, completion = completion](std::optional<ipb_sptr> pb) {
         if (pb.has_value()) {
-            auto render_callback = [completion = Block_copy(completion)](void* cv_pixel_buffer_ref) {
+            auto render_callback = [completion = completion](void* cv_pixel_buffer_ref) {
                 if (cv_pixel_buffer_ref != nullptr) {
-                    CVPixelBufferRef retBuffer = (__bridge CVPixelBufferRef)cv_pixel_buffer_ref;
+                    CVPixelBufferRef retBuffer = (CVPixelBufferRef)cv_pixel_buffer_ref;
 
                     if (completion) {
                         completion(retBuffer);

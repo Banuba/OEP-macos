@@ -20,7 +20,8 @@ typedef void (^BNBOEPImageReadyBlock)(_Nullable CVPixelBufferRef pixelBuffer);
 - (instancetype)initWithWidth:(NSUInteger)width
                        height:(NSUInteger)height
                   manualAudio:(BOOL)manual
-                        token:(NSString*)token;
+                        token:(NSString*)token
+                resourcePaths:(nonnull NSArray<NSString *> *)resourcePaths;
 
 // /**
 //  * Async processImage method
