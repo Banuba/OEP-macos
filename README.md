@@ -31,7 +31,6 @@ Quick start examples for integrating [Banuba SDK on macos](https://docs.banuba.c
     - Accelerate
     - OpenGL
     - BanubaEffectPlayer
-    - BanubaPostprocess
     - banuba_oep
 ![Alt text](/resources/images/2DB863E6-8769-43CF-BAD9-21872C4147DA_4_5005_c.jpeg?raw=true "Title")
 7. Add paths to the headers `banuba_oep.framework/Headers` in the `Build Settings` tab `Header Search Paths` option

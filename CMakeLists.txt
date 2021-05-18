@@ -29,8 +29,6 @@ add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/oep_framework)
 set(SDK_FRAMEWORK_PATH "${CMAKE_CURRENT_LIST_DIR}/bnb_sdk/mac")
 set(FullEPFrameworkPath "${SDK_FRAMEWORK_PATH}/$(CONFIGURATION)/BanubaEffectPlayer.framework")
 add_custom_command(OUTPUT "${FullEPFrameworkPath}" COMMAND "")
-set(FullPPFrameworkPath "${SDK_FRAMEWORK_PATH}/$(CONFIGURATION)/BanubaPostprocess.framework")
-add_custom_command(OUTPUT "${FullPPFrameworkPath}" COMMAND "")
 
 set(BANUBA_OEP_FRAMEWORK banuba_oep)
 
@@ -63,14 +61,12 @@ add_executable(${APP_NAME}
     ${APP_SOURCE_FILES}
     ${RESOURCES}
     ${FullEPFrameworkPath}
-    ${FullPPFrameworkPath}
 )
 
 foreach(assetItem ${RESOURCES})
   set_source_files_properties(${assetItem} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)   
 endforeach()
 set_source_files_properties(${FullEPFrameworkPath} PROPERTIES MACOSX_PACKAGE_LOCATION Frameworks)
-set_source_files_properties(${FullPPFrameworkPath} PROPERTIES MACOSX_PACKAGE_LOCATION Frameworks)
 
 add_dependencies(${APP_NAME} ${BANUBA_OEP_FRAMEWORK})
 
@@ -104,7 +100,6 @@ target_link_libraries(${APP_NAME}
     "-framework Foundation"
     "-framework OpenGL"
     "-framework BanubaEffectPlayer"
-    "-framework BanubaPostprocess"
     "-framework ${BANUBA_OEP_FRAMEWORK}"
 )
 

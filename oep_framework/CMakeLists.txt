@@ -34,3 +34,7 @@ set(public_headers ${CMAKE_CURRENT_LIST_DIR}/oep/BNBOffscreenEffectPlayer.h)
 add_custom_command(TARGET ${FRAMEWORK_NAME} POST_BUILD
   COMMAND sh ${PROJECT_SOURCE_DIR}/toolchain/pack_framework.sh ${FRAMEWORK_NAME} ${CMAKE_CURRENT_BINARY_DIR} $<IF:$<CONFIG:Debug>,Debug,Release> ${public_headers}
 )
+
+get_target_property(SDK_COMMON_FOLDER bnb_effect_player INTERFACE_BIN_DIR)
+target_include_directories(${FRAMEWORK_NAME} PRIVATE debug "${SDK_COMMON_FOLDER}/debug/BanubaEffectPlayer.framework/Headers")
+target_include_directories(${FRAMEWORK_NAME} PRIVATE optimized "${SDK_COMMON_FOLDER}/release/BanubaEffectPlayer.framework/Headers")
