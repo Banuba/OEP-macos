@@ -27,13 +27,18 @@
 - (instancetype)initWithWidth:(NSUInteger)width
                        height:(NSUInteger)height
                   manualAudio:(BOOL)manual
-                        token:(NSString*)token;
+                        token:(NSString*)token
+                resourcePaths:(NSArray<NSString *> *)resourcePaths;
 {
     _width = width;
     _height = height;
 
     std::optional<iort_sptr> ort = std::make_shared<bnb::offscreen_render_target>(width, height);
-    oep = bnb::offscreen_effect_player::create({ BNB_RESOURCES_FOLDER }, std::string([token UTF8String]), width, height, manual, ort);
+    std::vector<std::string> paths;
+    for (id object in resourcePaths) {
+        paths.push_back(std::string([(NSString*)object UTF8String]));
+    }
+    oep = bnb::offscreen_effect_player::create(paths, std::string([token UTF8String]), width, height, manual, ort);
 
     return self;
 }
