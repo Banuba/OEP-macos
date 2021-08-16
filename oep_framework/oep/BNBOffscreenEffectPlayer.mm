@@ -50,7 +50,7 @@
     if (pixelFormatType == kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange) {
         pixelBuffer = [self convertYUVVideoRangeToARGB:pixelBuffer];
     }
-    BNBFullImageData* inputData = [[BNBFullImageData alloc] init:pixelBuffer requireMirroring:(YES) faceOrientation:0 fieldOfView:(float) 60];
+    BNBFullImageData* inputData = [[BNBFullImageData alloc] init:pixelBuffer cameraOrientation:BNBCameraOrientationDeg0 requireMirroring:(YES) faceOrientation:0 fieldOfView:(float) 60];
     ::bnb::full_image_t image = bnb::objcpp::full_image_data::toCpp(inputData);
 
     auto image_ptr = std::make_shared<bnb::full_image_t>(std::move(image));
