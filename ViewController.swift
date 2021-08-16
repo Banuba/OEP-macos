@@ -115,10 +115,7 @@ class ViewController: NSViewController, AVCaptureVideoDataOutputSampleBufferDele
         guard let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
 
         if (self.effectLoaded) {
-            CVPixelBufferLockBaseAddress(imageBuffer, [])
-
             oep?.processImage(imageBuffer, completion: {(resPixelBuffer) in
-                CVPixelBufferUnlockBaseAddress(imageBuffer, [])
                 self.paintPixelBuffer(resPixelBuffer)
             })
         }

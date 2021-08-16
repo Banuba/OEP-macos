@@ -331,7 +331,6 @@ namespace bnb
     {
         // it's only need for use while working with dynamic libs
         utility::load_glad_functions((GLADloadproc) nsGLGetProcAddress);
-        bnb::interfaces::postprocess_helper::load_glad_functions(reinterpret_cast<int64_t>(nsGLGetProcAddress));
 
         if (0 == gladLoadGLLoader((GLADloadproc) nsGLGetProcAddress)) {
             throw std::runtime_error("gladLoadGLLoader error");
