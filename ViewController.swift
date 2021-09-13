@@ -35,6 +35,11 @@ class ViewController: NSViewController, AVCaptureVideoDataOutputSampleBufferDele
         setUpCamera()
     }
 
+    override func viewWillDisappear() {
+        input = nil
+        oep = nil
+    }
+    
     override var representedObject: Any? {
         didSet {
         }
