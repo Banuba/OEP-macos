@@ -10,7 +10,7 @@ namespace bnb
         int32_t width, int32_t height, bool manual_audio, std::optional<iort_sptr> ort = std::nullopt)
     {
         if (!ort.has_value()) {
-            ort = std::make_shared<bnb::offscreen_render_target>(width, height);
+            ort = std::make_shared<bnb::offscreen_renderer>(width, height);
         }
 
         // we use "new" instead of "make_shared" because the constructor in "offscreen_effect_player" is private
