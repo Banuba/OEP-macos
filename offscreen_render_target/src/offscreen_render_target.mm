@@ -155,7 +155,7 @@
     pipelineDescriptor.label = @"Render Pipeline";
     pipelineDescriptor.vertexFunction = vertexFunction;
     pipelineDescriptor.fragmentFunction = fragmentFunction;
-    pipelineDescriptor.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm;
+    pipelineDescriptor.colorAttachments[0].pixelFormat = MTLPixelFormatRGBA8Unorm;
 
     NSError* error = nil;
 
@@ -238,6 +238,9 @@ namespace bnb
             (__bridge NSString*) kCVPixelBufferIOSurfacePropertiesKey: @{}
         };
    
+        // We get data from oep in RGBA, macos defined kCVPixelFormatType_32RGBA but not supported
+        // and we have to choose a different type. This does not in any way affect further
+        // processing, inside bytes still remain in the order of the RGBA.
         CVReturn err = CVPixelBufferCreate(kCFAllocatorDefault, width, height, kCVPixelFormatType_32BGRA, (__bridge    CFDictionaryRef) attrs, &m_offscreenRenderPixelBuffer);
    
         if (err != noErr) {

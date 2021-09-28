@@ -54,7 +54,7 @@ namespace bnb
         CVMetalTextureRef texture;
         id<MTLBuffer> m_framebuffer{0};
         id<MTLBuffer> m_postProcessingFramebuffer{0};
-        MTLPixelFormat m_pixelFormat = MTLPixelFormatBGRA8Unorm;
+        MTLPixelFormat m_pixelFormat = MTLPixelFormatRGBA8Unorm;
         CVPixelBufferRef m_offscreenRenderPixelBuffer{nullptr};
         CVMetalTextureRef m_offscreenRenderTexture{nullptr};
         id<MTLTexture> m_offscreenRenderMetalTexture;
