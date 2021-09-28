@@ -54,5 +54,7 @@ namespace bnb
 
         ipb_sptr m_current_frame;
         std::atomic<uint16_t> m_incoming_frame_queue_task_count = 0;
+        
+        BNBCopyableMetalLayer* _metalLayer;
     };
 } // bnb

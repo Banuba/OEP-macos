@@ -31,6 +31,9 @@ namespace bnb
             , m_ort(offscreen_render_target)
             , m_scheduler(1)
     {
+        _metalLayer = [[BNBCopyableMetalLayer alloc] init];
+        _metalLayer.bounds = CGRectMake(0, 0, width, height);
+        m_ort->activate_context(_metalLayer);
         auto task = [this, width, height]() {
             render_thread_id = std::this_thread::get_id();
             m_ort->init();
@@ -90,6 +93,7 @@ namespace bnb
             m_ep->effect_manager()->set_effect_size(width, height);
 
             m_current_frame.reset();
+            m_ort->activate_context(_metalLayer);
             m_ort->surface_changed(width, height);
         };
 
@@ -100,6 +104,7 @@ namespace bnb
     {
         auto task = [this, effect_path = effect_path]() {
             if (auto e_manager = m_ep->effect_manager()) {
+                e_manager->set_render_surface((int64_t) _metalLayer);
                 e_manager->load(effect_path);
             } else {
                 std::cout << "[Error] effect manager not initialized" << std::endl;
