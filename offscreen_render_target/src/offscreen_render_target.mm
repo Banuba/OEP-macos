@@ -66,10 +66,11 @@
             _commandQueue = [_device newCommandQueue];
 
             if (_commandQueue) {
-                NSBundle* bundle = [NSBundle bundleForClass:[BNBOffscreenEffectPlayer class]];
+                NSBundle* bundle = [NSBundle mainBundle];
+                NSString *libPath = [bundle pathForResource:@"OEPShaders" ofType:@"metallib"];
                 NSError* error = nil;
-                _library = [_device newDefaultLibraryWithBundle:bundle error:&error];
-
+                _library = [_device newLibraryWithFile:libPath error:&error];
+                
                 if (!error) {
                     CVReturn status = CVMetalTextureCacheCreate(kCFAllocatorDefault, nil, _device, nil, &_textureCache);
 
@@ -274,7 +275,7 @@ namespace bnb
    
          // Create once
          [[MetalHelper shared] setupRenderPassDescriptorWithTexture:m_offscreenRenderMetalTexture];
-         [[MetalHelper shared] makeRenderPipelineWithVertexFunctionName:@"vertex_main"    fragmentFunctionName:@"fragment_main"];
+         [[MetalHelper shared] makeRenderPipelineWithVertexFunctionName:@"BNBOEPShaders::vertex_main"    fragmentFunctionName:@"BNBOEPShaders::fragment_main"];
     }
    
     void offscreen_renderer::activate_metal(BNBCopyableMetalLayer* metalLayer)
