@@ -60,7 +60,10 @@
     self = [super init];
 
     if (self) {
-        _device = MTLCreateSystemDefaultDevice();
+        //choose device which connected to display
+        auto display_id = CGMainDisplayID();
+        _device = CGDirectDisplayCopyCurrentMetalDevice(display_id);
+        NSLog(@"GPU device name: %@", _device.name);
 
         if (_device) {
             _commandQueue = [_device newCommandQueue];
