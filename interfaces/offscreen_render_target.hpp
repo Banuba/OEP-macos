@@ -4,6 +4,8 @@
 
 #include "formats.hpp"
 
+#include "BNBCopyableMetalLayer.h"
+
 namespace bnb::interfaces
 {
     class offscreen_render_target
@@ -34,7 +36,7 @@ namespace bnb::interfaces
          * 
          * Example activate_context()
          */
-        virtual void activate_context() = 0;
+        virtual void activate_context(BNBCopyableMetalLayer* layer) = 0;
 
         /**
          * Preparing texture for effect_player
