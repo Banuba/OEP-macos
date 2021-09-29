@@ -15,10 +15,8 @@ add_library(${FRAMEWORK_NAME} STATIC
 )
 
 target_link_libraries(${FRAMEWORK_NAME}
-    ogl_utils
     offscreen_ep
     offscreen_rt
-    glad
 )
 
 create_linking_flags(linking_flags ${FRAMEWORK_NAME})

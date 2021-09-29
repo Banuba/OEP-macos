@@ -4,9 +4,9 @@
 
 #include "interfaces/offscreen_render_target.hpp"
 
-#include "program.hpp"
+//#include "program.hpp"
 
-#include <glad/glad.h>
+//#include <glad/glad.h>
 
 typedef NS_ENUM(NSUInteger, EPOrientation) {
     EPOrientationAngles0,
