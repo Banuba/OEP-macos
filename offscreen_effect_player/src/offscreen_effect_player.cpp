@@ -68,12 +68,10 @@ namespace bnb
         auto task = [this, image, callback, target_orient]() {
             if (m_incoming_frame_queue_task_count == 1) {
                 m_current_frame->lock();
-                m_ort->prepare_rendering();
                 m_ep->push_frame(std::move(*image));
                 while (m_ep->draw() < 0) {
                     std::this_thread::yield();
-                }
-                m_ort->orient_image(*target_orient);
+                };
                 callback(m_current_frame);
                 m_current_frame->unlock();
             } else {
