@@ -314,7 +314,6 @@ namespace bnb
         id<MTLTexture> layerTexture = effectPlayerLayer.lastDrawable.texture;
    
         if (layerTexture) {
-            NSAutoreleasePool* autoReleasePool = [[NSAutoreleasePool alloc] init];
             id<MTLCommandBuffer> commandBuffer = [m_command_queue commandBuffer];
    
             if (commandBuffer) {
@@ -340,7 +339,6 @@ namespace bnb
             } else {
                 NSLog(@"Rendering failed. Cannot create command buffer");
             }
-            [autoReleasePool drain];
         }
     }
 
