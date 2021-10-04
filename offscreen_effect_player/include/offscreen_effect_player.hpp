@@ -8,7 +8,7 @@
 
 #include "thread_pool.h"
 
-#include "pixel_buffer.hpp"
+#include "pixel_data.hpp"
 
 namespace bnb
 {
@@ -36,7 +36,7 @@ namespace bnb
 
     private:
         friend class interfaces::offscreen_effect_player;
-        friend class pixel_buffer;
+        friend class pixel_data;
 
         void read_current_buffer(std::function<void(bnb::data_t data)> callback);
 

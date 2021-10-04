@@ -4,7 +4,7 @@
 
 #include "formats.hpp"
 #include "offscreen_render_target.hpp"
-#include "pixel_buffer.hpp"
+#include "pixel_data.hpp"
 
 
 namespace bnb {
@@ -27,7 +27,7 @@ namespace interfaces
          * and calling callback as a frame will be processed
          * 
          * @param image full_image_t - containing a frame for processing 
-         * @param callback calling when frame will be processed, containing pointer of pixel_buffer for get bytes
+         * @param callback calling when frame will be processed, containing pointer of pixel_data for get bytes
          * @param target_orient 
          * 
          * Example process_image_async(image_sptr, [](ipb_sptr sptr){})

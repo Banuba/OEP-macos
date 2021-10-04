@@ -96,11 +96,11 @@ set_target_properties(${APP_NAME} PROPERTIES
 )
 
 target_link_libraries(${APP_NAME}
+    "-framework ${BANUBA_OEP_FRAMEWORK}"
+    bnb_effect_player
     "-framework Accelerate"
     "-framework Cocoa"
     "-framework Foundation"
-    "-framework BanubaEffectPlayer"
-    "-framework ${BANUBA_OEP_FRAMEWORK}"
 )
 
 set_target_properties(${APP_NAME} PROPERTIES XCODE_ATTRIBUTE_FRAMEWORK_SEARCH_PATHS "${SDK_FRAMEWORK_PATH}/$<IF:$<CONFIG:Debug>,debug,release>")
