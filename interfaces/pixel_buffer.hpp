@@ -8,12 +8,12 @@ using oep_image_ready_cb = std::function<void(std::optional<bnb::full_image_t> i
 using oep_image_ready_pb_cb = std::function<void(void* image)>;
 
 
-namespace bnb::interfaces
+namespace bnb::oep::interfaces
 {
-    class pixel_data
+    class pixel_buffer
     {
     public:
-        virtual ~pixel_data() = default;
+        virtual ~pixel_buffer() = default;
 
         /**
          * Lock pixel buffer. If you want to keep lock of pixel buffer
@@ -24,7 +24,7 @@ namespace bnb::interfaces
         virtual void lock() = 0;
 
         /**
-         * Unlock pixel_data. Must be called if user explicitly called lock()
+         * Unlock pixel_buffer. Must be called if user explicitly called lock()
          * after the work to process output pixel buffer completed.
          * 
          * Example unlock()
@@ -32,9 +32,9 @@ namespace bnb::interfaces
         virtual void unlock() = 0;
 
         /**
-         * Returns the locking state of pixel_data.
+         * Returns the locking state of pixel_buffer.
          * 
-         * @return true if pixel_data locked else false
+         * @return true if pixel_buffer locked else false
          * 
          * Example is_locked()
          */
@@ -55,4 +55,4 @@ namespace bnb::interfaces
     };
 } // bnb::interfaces
 
-using ipb_sptr = std::shared_ptr<bnb::interfaces::pixel_data>;
+using ipb_sptr = std::shared_ptr<bnb::oep::interfaces::pixel_buffer>;

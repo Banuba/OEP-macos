@@ -1,7 +1,7 @@
 #pragma once
 
 #include "offscreen_effect_player.hpp"
-#include "interfaces/pixel_data.hpp"
+#include "interfaces/pixel_buffer.hpp"
 
 namespace bnb
 {
@@ -9,10 +9,10 @@ namespace bnb
     using oep_sptr = std::shared_ptr<offscreen_effect_player>;
     using oep_wptr = std::weak_ptr<offscreen_effect_player>;
 
-    class pixel_data: public interfaces::pixel_data
+    class pixel_buffer: public oep::interfaces::pixel_buffer
     {
     public:
-        pixel_data(oep_sptr oep_sptr, uint32_t width, uint32_t height, camera_orientation orientation);
+        pixel_buffer(oep_sptr oep_sptr, uint32_t width, uint32_t height, camera_orientation orientation);
 
         void lock() override;
         void unlock() override;

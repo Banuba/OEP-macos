@@ -49,7 +49,7 @@ namespace bnb
                                                       std::optional<interfaces::orient_format> target_orient)
     {
         if (m_current_frame == nullptr) {
-            m_current_frame = std::make_shared<pixel_data>(shared_from_this(),
+            m_current_frame = std::make_shared<pixel_buffer>(shared_from_this(),
                 image->get_format().width, image->get_format().height, image->get_format().orientation);
         }
 

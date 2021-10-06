@@ -1,4 +1,4 @@
-#include "pixel_data.hpp"
+#include "pixel_buffer.hpp"
 
 #include <bnb/types/full_image.hpp>
 
@@ -6,28 +6,28 @@
 
 namespace bnb
 {
-    pixel_data::pixel_data(oep_sptr oep_sptr, uint32_t width, uint32_t height, camera_orientation orientation)
+    pixel_buffer::pixel_buffer(oep_sptr oep_sptr, uint32_t width, uint32_t height, camera_orientation orientation)
         : m_oep_ptr(oep_sptr)
         , m_width(width)
         , m_height(height)
         , m_orientation(orientation) {}
 
-    void pixel_data::lock()
+    void pixel_buffer::lock()
     {
         ++lock_count;
     }
 
-    void pixel_data::unlock()
+    void pixel_buffer::unlock()
     {
         if (lock_count > 0) {
             --lock_count;
             return;
         }
 
-        throw std::runtime_error("pixel_data already unlocked");
+        throw std::runtime_error("pixel_buffer already unlocked");
     }
 
-    bool pixel_data::is_locked()
+    bool pixel_buffer::is_locked()
     {
         if (lock_count == 0) {
             return false;
@@ -35,7 +35,7 @@ namespace bnb
         return true;
     }
 
-    void pixel_data::get_image(oep_image_ready_pb_cb callback)
+    void pixel_buffer::get_image(oep_image_ready_pb_cb callback)
     {
         if (!is_locked()) {
             std::cout << "[WARNING] The pixel buffer must be locked" << std::endl;
