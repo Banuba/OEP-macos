@@ -51,7 +51,7 @@ namespace bnb::interfaces
          * 
          * Example get_image([](void* cv_pixel_buffer_ref){}, bnb::image_format::texture)
          */
-        virtual void get_image(oep_image_ready_pb_cb callback, image_format format) = 0;
+        virtual void get_image(oep_image_ready_pb_cb callback) = 0;
     };
 } // bnb::interfaces
 

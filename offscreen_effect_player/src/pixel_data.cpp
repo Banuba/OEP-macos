@@ -35,7 +35,7 @@ namespace bnb
         return true;
     }
 
-    void pixel_data::get_image(oep_image_ready_pb_cb callback, interfaces::image_format format)
+    void pixel_data::get_image(oep_image_ready_pb_cb callback)
     {
         if (!is_locked()) {
             std::cout << "[WARNING] The pixel buffer must be locked" << std::endl;
@@ -44,7 +44,7 @@ namespace bnb
         }
 
         if (auto oep_sp = m_oep_ptr.lock()) {
-            oep_sp->read_pixel_buffer(callback, format);
+            oep_sp->read_pixel_buffer(callback);
         }
         else {
             std::cout << "[ERROR] Offscreen effect player destroyed" << std::endl;

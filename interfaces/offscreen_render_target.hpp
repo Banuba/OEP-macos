@@ -4,8 +4,6 @@
 
 #include "formats.hpp"
 
-#include "BNBCopyableMetalLayer.h"
-
 namespace bnb::interfaces
 {
     class offscreen_render_target
@@ -36,7 +34,7 @@ namespace bnb::interfaces
          * 
          * Example activate_context()
          */
-        virtual void activate_context(BNBCopyableMetalLayer* layer) = 0;
+        virtual void activate_context() = 0;
 
         /**
          * Preparing texture for effect_player
@@ -70,12 +68,20 @@ namespace bnb::interfaces
          * but not supported and we have to choose a different type.
          * Method must be called from render thread.
          * 
-         * @param format image format of ouput
          * @return a void*. void* keep CVPixelBufferRef
          * 
          * Example get_image(bnb::image_format::texture)
          */
-        virtual void* get_image(image_format format) = 0;
+        virtual void* get_image() = 0;
+        
+        /**
+         * Reading current BNBCopyableMetalLayer
+         *
+         * @return a void*. void* keeps BNBCopyableMetalLayer
+         *
+         * Example get_layer()
+         */
+        virtual void* get_layer() = 0;
     };
 } // bnb::interfaces
 

@@ -67,7 +67,7 @@
                     CVPixelBufferRelease(retBuffer);
                 }
             };
-            (*pb)->get_image(render_callback, bnb::interfaces::image_format::texture);
+            (*pb)->get_image(render_callback);
         }
     };
     std::optional<bnb::interfaces::orient_format> target_orient{ { bnb::camera_orientation::deg_0, true } };

@@ -201,7 +201,7 @@ namespace bnb
         : m_width(width)
         , m_height(height)
     {
-        activate_metal(nullptr);
+        activate_metal();
     }
    
     offscreen_renderer::~offscreen_renderer()
@@ -284,10 +284,10 @@ namespace bnb
          [[MetalHelper shared] makeRenderPipelineWithVertexFunctionName:@"BNBOEPShaders::vertex_main"    fragmentFunctionName:@"BNBOEPShaders::fragment_main"];
     }
    
-    void offscreen_renderer::activate_metal(BNBCopyableMetalLayer* metalLayer)
+    void offscreen_renderer::activate_metal()
     {
         m_command_queue = [MetalHelper shared].commandQueue;
-        effectPlayerLayer = metalLayer;
+        effectPlayerLayer = [[BNBCopyableMetalLayer alloc] init];
     }
    
     void offscreen_renderer::flush_metal()
@@ -362,13 +362,11 @@ namespace bnb
      }
     
     void offscreen_renderer::init() {}
-    void offscreen_renderer::activate_context(BNBCopyableMetalLayer* layer) {
-        activate_metal(layer);
-    }
+    void offscreen_renderer::activate_context() {}
     void offscreen_renderer::prepare_rendering() {}
     void offscreen_renderer::orient_image(interfaces::orient_format orient) {}
     
-    void* offscreen_renderer::get_image(interfaces::image_format format){
+    void* offscreen_renderer::get_image(){
         return get_oriented_image(EPOrientationAngles180);
     }
 
@@ -384,6 +382,10 @@ namespace bnb
                                       fromRegion: region
                                      mipmapLevel: 0];
          return data;
+    }
+
+    void* offscreen_renderer::get_layer(){
+        return (void*)CFBridgingRetain(effectPlayerLayer);
     }
 }; // bnb
     //MARK: offscreen_renderer -- Finish

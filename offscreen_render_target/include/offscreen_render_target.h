@@ -3,10 +3,11 @@
 #include <bnb/types/base_types.hpp>
 
 #include "interfaces/offscreen_render_target.hpp"
+#include "BNBCopyableMetalLayer.h"
 
-//#include "program.hpp"
-
-//#include <glad/glad.h>
+#import <Metal/Metal.h>
+#import <MetalKit/MetalKit.h>
+#import <CoreMedia/CoreMedia.h>
 
 typedef NS_ENUM(NSUInteger, EPOrientation) {
     EPOrientationAngles0,
@@ -29,18 +30,19 @@ namespace bnb
         void setup_offscreen_pixel_buffer(EPOrientation orientation);
         std::tuple<int, int> getWidthHeight(EPOrientation orientation);
         void setup_offscreen_render_target(EPOrientation orientation);
-        void activate_metal(BNBCopyableMetalLayer* metalLayer);
+        void activate_metal();
         void flush_metal();
         bnb::camera_orientation get_camera_orientation(EPOrientation orientation);
         void draw(EPOrientation orientation);
         CVPixelBufferRef get_oriented_image(EPOrientation orientation);
         
         void init() override;
-        void activate_context(BNBCopyableMetalLayer* layer) override;
+        void activate_context() override;
         void prepare_rendering() override;
         void orient_image(interfaces::orient_format orient) override;
-        void* get_image(interfaces::image_format format) override;
+        void* get_image() override;
         bnb::data_t read_current_buffer() override;
+        void* get_layer() override;
         
     private:
         size_t m_width;

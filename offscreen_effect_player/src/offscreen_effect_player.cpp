@@ -1,5 +1,4 @@
 #include "offscreen_effect_player.hpp"
-#include "offscreen_render_target.h"
 
 #include <iostream>
 
@@ -10,7 +9,8 @@ namespace bnb
         int32_t width, int32_t height, bool manual_audio, std::optional<iort_sptr> ort = std::nullopt)
     {
         if (!ort.has_value()) {
-            ort = std::make_shared<bnb::offscreen_renderer>(width, height);
+                        std::cout << "[Warning] The offscreen renderer has no value!" << std::endl;
+            return;
         }
 
         // we use "new" instead of "make_shared" because the constructor in "offscreen_effect_player" is private
@@ -31,9 +31,6 @@ namespace bnb
             , m_ort(offscreen_render_target)
             , m_scheduler(1)
     {
-        _metalLayer = [[BNBCopyableMetalLayer alloc] init];
-        _metalLayer.bounds = CGRectMake(0, 0, width, height);
-        m_ort->activate_context(_metalLayer);
         auto task = [this, width, height]() {
             render_thread_id = std::this_thread::get_id();
             m_ort->init();
@@ -91,7 +88,6 @@ namespace bnb
             m_ep->effect_manager()->set_effect_size(width, height);
 
             m_current_frame.reset();
-            m_ort->activate_context(_metalLayer);
             m_ort->surface_changed(width, height);
         };
 
@@ -102,7 +98,7 @@ namespace bnb
     {
         auto task = [this, effect_path = effect_path]() {
             if (auto e_manager = m_ep->effect_manager()) {
-                e_manager->set_render_surface((int64_t) _metalLayer);
+                e_manager->set_render_surface((int64_t) m_ort->get_layer());
                 e_manager->load(effect_path);
             } else {
                 std::cout << "[Error] effect manager not initialized" << std::endl;
@@ -150,17 +146,17 @@ namespace bnb
         m_scheduler.enqueue(task);
     }
 
-    void offscreen_effect_player::read_pixel_buffer(oep_image_ready_pb_cb callback, interfaces::image_format format)
+    void offscreen_effect_player::read_pixel_buffer(oep_image_ready_pb_cb callback)
     {
         if (std::this_thread::get_id() == render_thread_id) {
-            callback(m_ort->get_image(format));
+            callback(m_ort->get_image());
             return;
         }
 
         oep_wptr this_ = shared_from_this();
-        auto task = [this_, callback, format]() {
+        auto task = [this_, callback]() {
             if (auto this_sp = this_.lock()) {
-                callback(this_sp->m_ort->get_image(format));
+                callback(this_sp->m_ort->get_image());
             }
         };
         m_scheduler.enqueue(task);
