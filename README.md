@@ -29,7 +29,6 @@ Quick start examples for integrating [Banuba SDK on macos](https://docs.banuba.c
 5. Copy the `effects` from `resources` to your application direcory.
 6. Add references to frameworks in your project settings in the `General` tab in `Frameworks, Libraries, and Embedded Content`:
     - Accelerate
-    - OpenGL
     - BanubaEffectPlayer
     - banuba_oep
 ![Alt text](/resources/images/2DB863E6-8769-43CF-BAD9-21872C4147DA_4_5005_c.jpeg?raw=true "Title")
@@ -57,10 +56,17 @@ Contributions are what make the open source community such an amazing place to l
 
 - **interfaces** - offscreen effect player interfaces
 - **offscreen_effect_player** - is a wrapper for effect_player. It allows you to use your own implementation for offscreen_render_target
-- **offscreen_render_target** - is an implementation option for the offscreen_render_target interface. Allows to prepare gl framebuffers and textures for receiving a frame from gpu, receive bytes of the processed frame from the gpu and pass them to the cpu, as well as, if necessary, set the orientation for the received frame. This implementation uses GLFW to work with gl context
+- **offscreen_render_target** - is an implementation option for the offscreen_render_target interface. Allows to prepare METAL framebuffers and textures for receiving a frame from gpu, receive bytes of the processed frame from the gpu and pass them to the cpu, as well as, if necessary, set the orientation for the received frame.
 - **libraries**
     - **utils**
-        - **ogl_utils** - contains helper classes to work with Open GL
         - **utils** - сontains common helper classes such as thread_pool
 - **oep_framework** - contains build rules banuba_oep framework and BNBOffscreenEffectPlayer, which is a class for working with the effect player 
 - **ViewController.swift** - contains a pipeline of frames received from the camera and sent for processing the effect and the subsequent receipt of processed frames
+
+# Miscellaneous
+
+- if you need to build METAL shaders library you should use next commands:
+xcrun -sdk macosx metal -c OEPShaders.metal -o OEPShaders.air
+xcrun -sdk macosx metallib OEPShaders.air -o OEPShaders.metallib
+
+- while running test app in Xcode, you could see memory leak. This is some effects of Xcode. You could run the app without Xcode and use system monitor to make certain, that there is no memory leak in release version of the app.
