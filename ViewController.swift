@@ -36,8 +36,10 @@ class ViewController: NSViewController, AVCaptureVideoDataOutputSampleBufferDele
     }
 
     override func viewWillDisappear() {
+        unloadEffect(effectPath: "test_BG")
         input = nil
         oep = nil
+        session.stopRunning()
     }
     
     override var representedObject: Any? {
