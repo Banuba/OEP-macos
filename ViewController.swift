@@ -36,7 +36,7 @@ class ViewController: NSViewController, AVCaptureVideoDataOutputSampleBufferDele
     }
 
     override func viewWillDisappear() {
-        unloadEffect(effectPath: "test_BG")
+        unloadEffect()
         input = nil
         oep = nil
         session.stopRunning()
@@ -59,7 +59,7 @@ class ViewController: NSViewController, AVCaptureVideoDataOutputSampleBufferDele
         effectLoaded = true
     }
 
-    private func unloadEffect(effectPath: String) {
+    private func unloadEffect() {
         oep?.unloadEffect()
         effectLoaded = false
     }
