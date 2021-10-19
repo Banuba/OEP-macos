@@ -493,8 +493,10 @@ namespace bnb
         if (format == interfaces::image_format::texture) {
             if (m_oriented) {
                 m_oriented = false;
+                CVPixelBufferRetain(m_offscreenPostProcessingPixelBuffer);
                 return (void*)m_offscreenPostProcessingPixelBuffer;
             }
+            CVPixelBufferRetain(m_offscreenRenderPixelBuffer);
             return (void*)m_offscreenRenderPixelBuffer;
         }
 
