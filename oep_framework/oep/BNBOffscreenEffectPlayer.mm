@@ -33,7 +33,7 @@
     _width = width;
     _height = height;
 
-    std::optional<iort_sptr> ort = std::make_shared<bnb::offscreen_renderer>(width, height);
+    std::optional<iort_sptr> ort = std::make_shared<bnb::offscreen_render_target>(width, height);
     std::vector<std::string> paths;
     for (id object in resourcePaths) {
         paths.push_back(std::string([(NSString*)object UTF8String]));

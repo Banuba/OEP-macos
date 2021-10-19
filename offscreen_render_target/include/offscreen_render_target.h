@@ -19,12 +19,12 @@ typedef NS_ENUM(NSUInteger, EPOrientation) {
 namespace bnb
 {
 
-    class offscreen_renderer : public interfaces::offscreen_render_target
+    class offscreen_render_target : public interfaces::offscreen_render_target
     {
     public:
-        offscreen_renderer(size_t width, size_t height);
+        offscreen_render_target(size_t width, size_t height);
 
-        ~offscreen_renderer();
+        ~offscreen_render_target();
         void cleanup_render_buffers();
         void surface_changed(int32_t width, int32_t height) override;
         void setup_offscreen_pixel_buffer(EPOrientation orientation);
