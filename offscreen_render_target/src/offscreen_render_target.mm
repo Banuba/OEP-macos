@@ -1,11 +1,14 @@
 #include "offscreen_render_target.h"
 
 #include "utils.h"
+#include "BNBCopyableMetalLayer.h"
 
 #include <bnb/effect_player/utility.hpp>
 #include <bnb/postprocess/interfaces/postprocess_helper.hpp>
 #include <oep_framework/oep/BNBOffscreenEffectPlayer.h>
 
+#import <Metal/Metal.h>
+#import <MetalKit/MetalKit.h>
 #import <Cocoa/Cocoa.h>
 #import <CoreVideo/CoreVideo.h>
 
@@ -201,6 +204,8 @@ namespace bnb
         : m_width(width)
         , m_height(height)
     {
+        m_pixelFormat = MTLPixelFormatRGBA8Unorm;
+        m_offscreenRenderTexture = nullptr;
         activate_metal();
     }
    
@@ -216,8 +221,8 @@ namespace bnb
             CFRelease(m_offscreenRenderPixelBuffer);
             m_offscreenRenderPixelBuffer = nullptr;
         }
-        if (m_offscreenRenderTexture) {
-            CFRelease(m_offscreenRenderTexture);
+        if (std::any_cast<CVMetalTextureRef>(m_offscreenRenderTexture)) {
+            CFRelease(std::any_cast<CVMetalTextureRef>(m_offscreenRenderTexture));
             m_offscreenRenderTexture = nullptr;
         }
     }
@@ -260,16 +265,18 @@ namespace bnb
     void offscreen_render_target::setup_offscreen_render_target(EPOrientation orientation)
     {
          auto [width, height] = getWidthHeight(orientation);
+         CVMetalTextureRef m_tempOffscreenRenderTexture{nullptr};
          CVReturn err = CVMetalTextureCacheCreateTextureFromImage(
              kCFAllocatorDefault,
              [MetalHelper shared].textureCache,
              m_offscreenRenderPixelBuffer,
              NULL,
-             m_pixelFormat,
+             std::any_cast<MTLPixelFormat>(m_pixelFormat),
              width,
              height,
              0,
-             &m_offscreenRenderTexture);
+             &m_tempOffscreenRenderTexture);
+         m_offscreenRenderTexture = m_tempOffscreenRenderTexture;
    
          if (err != noErr) {
              @throw [NSException exceptionWithName:NSInternalInconsistencyException
@@ -277,10 +284,10 @@ namespace bnb
                            userInfo:nil];
          }
    
-         m_offscreenRenderMetalTexture = CVMetalTextureGetTexture(m_offscreenRenderTexture);
+         m_offscreenRenderMetalTexture = CVMetalTextureGetTexture(std::any_cast<CVMetalTextureRef>(m_offscreenRenderTexture));
    
          // Create once
-         [[MetalHelper shared] setupRenderPassDescriptorWithTexture:m_offscreenRenderMetalTexture];
+         [[MetalHelper shared] setupRenderPassDescriptorWithTexture:std::any_cast<id<MTLTexture>>(m_offscreenRenderMetalTexture)];
          [[MetalHelper shared] makeRenderPipelineWithVertexFunctionName:@"BNBOEPShaders::vertex_main"    fragmentFunctionName:@"BNBOEPShaders::fragment_main"];
     }
    
@@ -311,10 +318,10 @@ namespace bnb
    
     void offscreen_render_target::draw(EPOrientation orientation)
     {
-        id<MTLTexture> layerTexture = effectPlayerLayer.lastDrawable.texture;
+        id<MTLTexture> layerTexture = std::any_cast<BNBCopyableMetalLayer*>(effectPlayerLayer).lastDrawable.texture;
    
         if (layerTexture) {
-            id<MTLCommandBuffer> commandBuffer = [m_command_queue commandBuffer];
+            id<MTLCommandBuffer> commandBuffer = [std::any_cast<id<MTLCommandQueue>>(m_command_queue) commandBuffer];
    
             if (commandBuffer) {
                 MetalHelper* helper = [MetalHelper shared];
@@ -377,7 +384,8 @@ namespace bnb
          MTLRegion region = {{ 0, 0, 0 },             // MTLOrigin
                              {m_width, m_height, 1}}; // MTLSize
     
-         [m_offscreenRenderMetalTexture getBytes: data.data.get()
+         [std::any_cast<id<MTLTexture>>(m_offscreenRenderMetalTexture)
+                                        getBytes: data.data.get()
                                      bytesPerRow: m_width * 4
                                       fromRegion: region
                                      mipmapLevel: 0];
@@ -385,7 +393,7 @@ namespace bnb
     }
 
     void* offscreen_render_target::get_layer(){
-        return (void*)CFBridgingRetain(effectPlayerLayer);
+        return (void*)CFBridgingRetain(std::any_cast<BNBCopyableMetalLayer*>(effectPlayerLayer));
     }
 }; // bnb
     //MARK: offscreen_render_target -- Finish
