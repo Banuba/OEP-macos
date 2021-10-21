@@ -8,15 +8,14 @@
 
 #import <CoreMedia/CoreMedia.h>
 
-enum EPOrientation{
-    EPOrientationAngles0,
-    EPOrientationAngles90,
-    EPOrientationAngles180,
-    EPOrientationAngles270
-};
-
 namespace bnb
 {
+    enum EPOrientation{
+        EPOrientationAngles0,
+        EPOrientationAngles90,
+        EPOrientationAngles180,
+        EPOrientationAngles270
+    };
 
     class offscreen_render_target : public interfaces::offscreen_render_target
     {
