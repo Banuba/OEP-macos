@@ -11,7 +11,7 @@ import AVFoundation
 import Cocoa
 import VideoToolbox
 
-class ViewController: NSViewController, AVCaptureVideoDataOutputSampleBufferDelegate {
+class ViewController: NSViewController, NSWindowDelegate, AVCaptureVideoDataOutputSampleBufferDelegate {
 
     @IBOutlet weak var imageView: NSImageView!
 
@@ -34,7 +34,19 @@ class ViewController: NSViewController, AVCaptureVideoDataOutputSampleBufferDele
         loadEffect(effectPath: "test_BG")
         setUpCamera()
     }
+    
+    override func viewDidAppear() {
+        self.view.window?.delegate = self
+    }
 
+    func windowWillClose(_ notification: Notification){
+        unloadEffect()
+        input = nil
+        oep = nil
+        session.stopRunning()
+        NSApp.terminate(self);
+    }
+    
     override var representedObject: Any? {
         didSet {
         }
@@ -52,7 +64,7 @@ class ViewController: NSViewController, AVCaptureVideoDataOutputSampleBufferDele
         effectLoaded = true
     }
 
-    private func unloadEffect(effectPath: String) {
+    private func unloadEffect() {
         oep?.unloadEffect()
         effectLoaded = false
     }
