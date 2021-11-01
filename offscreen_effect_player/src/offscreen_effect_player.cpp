@@ -1,5 +1,4 @@
 #include "offscreen_effect_player.hpp"
-#include "offscreen_render_target.h"
 
 #include <iostream>
 
@@ -10,7 +9,7 @@ namespace bnb
         int32_t width, int32_t height, bool manual_audio, std::optional<iort_sptr> ort = std::nullopt)
     {
         if (!ort.has_value()) {
-            ort = std::make_shared<bnb::offscreen_render_target>(width, height);
+                        std::cout << "[Warning] The offscreen renderer has no value!" << std::endl;
             return;
         }
 

@@ -1,11 +1,12 @@
 #pragma once
 
-#include <any>
-
 #include <bnb/types/base_types.hpp>
 
 #include "interfaces/offscreen_render_target.hpp"
+#include "BNBCopyableMetalLayer.h"
 
+#import <Metal/Metal.h>
+#import <MetalKit/MetalKit.h>
 #import <CoreMedia/CoreMedia.h>
 
 namespace bnb
@@ -46,18 +47,17 @@ namespace bnb
         size_t m_width;
         size_t m_height;
         int m_prev_orientation = -1;
-        //We use std::any to avoid MLT classes in offscreen_effect_player.cpp
-        std::any /*id<MTLCommandQueue>*/ m_command_queue;
-        std::any /*id<MTLBuffer>*/ m_uniformBuffer;
-        std::any /*BNBCopyableMetalLayer* */effectPlayerLayer;
-        std::any /*id<MTLBuffer>*/ m_vertexBuffer;
-        std::any /*id<MTLBuffer>*/ m_indicesBuffer;
-        std::any /*CVMetalTextureRef*/ texture;
-        std::any /*id<MTLBuffer>*/ m_framebuffer;
-        std::any /*id<MTLBuffer>*/ m_postProcessingFramebuffer;
-        std::any /*MTLPixelFormat*/ m_pixelFormat;
+        id<MTLCommandQueue> m_command_queue;
+        id<MTLBuffer> m_uniformBuffer;
+        BNBCopyableMetalLayer* effectPlayerLayer;
+        id<MTLBuffer> m_vertexBuffer;
+        id<MTLBuffer> m_indicesBuffer;
+        CVMetalTextureRef texture;
+        id<MTLBuffer> m_framebuffer{0};
+        id<MTLBuffer> m_postProcessingFramebuffer{0};
+        MTLPixelFormat m_pixelFormat = MTLPixelFormatRGBA8Unorm;
         CVPixelBufferRef m_offscreenRenderPixelBuffer{nullptr};
-        std::any /*CVMetalTextureRef*/ m_offscreenRenderTexture;
-        std::any /*id<MTLTexture>*/ m_offscreenRenderMetalTexture;
+        CVMetalTextureRef m_offscreenRenderTexture{nullptr};
+        id<MTLTexture> m_offscreenRenderMetalTexture;
     };
 } // bnb
