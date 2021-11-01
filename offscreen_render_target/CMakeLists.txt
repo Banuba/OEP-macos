@@ -5,6 +5,7 @@ set(include_dirs
 file(GLOB_RECURSE srcs
     ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/*.mm
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/*.h
 )
 
 add_library(offscreen_rt STATIC ${srcs})
@@ -15,7 +16,4 @@ target_include_directories(offscreen_rt PUBLIC
 
 target_include_directories(offscreen_rt PUBLIC ${PROJECT_SOURCE_DIR})
 
-target_link_libraries(offscreen_rt
-    glad
-    ogl_utils
-)
+target_link_libraries(offscreen_rt bnb_effect_player)

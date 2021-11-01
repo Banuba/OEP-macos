@@ -8,7 +8,7 @@ using oep_image_ready_cb = std::function<void(std::optional<bnb::full_image_t> i
 using oep_image_ready_pb_cb = std::function<void(void* image)>;
 
 
-namespace bnb::interfaces
+namespace bnb::oep::interfaces
 {
     class pixel_buffer
     {
@@ -51,8 +51,8 @@ namespace bnb::interfaces
          * 
          * Example get_image([](void* cv_pixel_buffer_ref){}, bnb::image_format::texture)
          */
-        virtual void get_image(oep_image_ready_pb_cb callback, image_format format) = 0;
+        virtual void get_image(oep_image_ready_pb_cb callback) = 0;
     };
 } // bnb::interfaces
 
-using ipb_sptr = std::shared_ptr<bnb::interfaces::pixel_buffer>;
+using ipb_sptr = std::shared_ptr<bnb::oep::interfaces::pixel_buffer>;

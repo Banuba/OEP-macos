@@ -68,12 +68,10 @@ namespace bnb
         auto task = [this, image, callback, target_orient]() {
             if (m_incoming_frame_queue_task_count == 1) {
                 m_current_frame->lock();
-                m_ort->prepare_rendering();
                 m_ep->push_frame(std::move(*image));
                 while (m_ep->draw() < 0) {
                     std::this_thread::yield();
-                }
-                m_ort->orient_image(*target_orient);
+                };
                 callback(m_current_frame);
                 m_current_frame->unlock();
             } else {
@@ -103,6 +101,7 @@ namespace bnb
     {
         auto task = [this, effect_path = effect_path]() {
             if (auto e_manager = m_ep->effect_manager()) {
+                e_manager->set_render_surface((int64_t) m_ort->get_layer());
                 e_manager->load(effect_path);
             } else {
                 std::cout << "[Error] effect manager not initialized" << std::endl;
@@ -150,17 +149,17 @@ namespace bnb
         m_scheduler.enqueue(task);
     }
 
-    void offscreen_effect_player::read_pixel_buffer(oep_image_ready_pb_cb callback, interfaces::image_format format)
+    void offscreen_effect_player::read_pixel_buffer(oep_image_ready_pb_cb callback)
     {
         if (std::this_thread::get_id() == render_thread_id) {
-            callback(m_ort->get_image(format));
+            callback(m_ort->get_image());
             return;
         }
 
         oep_wptr this_ = shared_from_this();
-        auto task = [this_, callback, format]() {
+        auto task = [this_, callback]() {
             if (auto this_sp = this_.lock()) {
-                callback(this_sp->m_ort->get_image(format));
+                callback(this_sp->m_ort->get_image());
             }
         };
         m_scheduler.enqueue(task);

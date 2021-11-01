@@ -1,236 +1,258 @@
 #include "offscreen_render_target.h"
 
-#include "opengl.hpp"
 #include "utils.h"
 
 #include <bnb/effect_player/utility.hpp>
 #include <bnb/postprocess/interfaces/postprocess_helper.hpp>
+#include <oep_framework/oep/BNBOffscreenEffectPlayer.h>
+
+#include "BNBCopyableMetalLayer.h"
 
 #import <Cocoa/Cocoa.h>
+#import <CoreVideo/CoreVideo.h>
+#import <Metal/Metal.h>
+#import <MetalKit/MetalKit.h>
 
+@interface MetalHelper : NSObject
+
+@property(strong, nonatomic, readonly) id<MTLCommandQueue> commandQueue;
+@property(strong, nonatomic, readonly) id<MTLDevice> device;
+@property(assign, nonatomic, readonly) CVMetalTextureCacheRef textureCache;
+@property(strong, nonatomic, readonly) MTLRenderPassDescriptor* renderPassDescriptor;
+@property(strong, nonatomic, readonly) id<MTLRenderPipelineState> pipelineState;
+@property(strong, nonatomic, readonly) id<MTLBuffer> indexBuffer;
+
+- (void)releaseResources;
+
+@end
+
+//MARK: MetalHelper -- Start
+
+@interface MetalHelper ()
+
+@property(strong, nonatomic, readwrite) id<MTLCommandQueue> commandQueue;
+@property(strong, nonatomic, readwrite) id<MTLDevice> device;
+@property(strong, nonatomic, readwrite) id<MTLLibrary> library;
+@property(assign, nonatomic, readwrite) CVMetalTextureCacheRef textureCache;
+@property(strong, nonatomic, readwrite) MTLRenderPassDescriptor* renderPassDescriptor;
+@property(strong, nonatomic, readwrite) id<MTLRenderPipelineState> pipelineState;
+@property(strong, nonatomic, readwrite) id<MTLBuffer> indexBuffer;
+
+@end
+
+@implementation MetalHelper
+{
+    id<MTLDevice> _device;
+}
+
++ (instancetype)shared
+{
+    static MetalHelper* instance = [MetalHelper new];
+    return instance;
+}
+
+- (void)releaseResources
+{
+    if (self.textureCache) {
+        CFRelease(self.textureCache);
+        self.textureCache = nil;
+    }
+}
+
+- (instancetype)init
+{
+    self = [super init];
+
+    if (self) {
+        //choose device which connected to display
+        auto display_id = CGMainDisplayID();
+        _device = CGDirectDisplayCopyCurrentMetalDevice(display_id);
+        NSLog(@"GPU device name: %@", _device.name);
+
+        if (_device) {
+            _commandQueue = [_device newCommandQueue];
+
+            if (_commandQueue) {
+                NSBundle* bundle = [NSBundle mainBundle];
+                NSString *libPath = [bundle pathForResource:@"OEPShaders" ofType:@"metallib"];
+                NSError* error = nil;
+                _library = [_device newLibraryWithFile:libPath error:&error];
+                
+                if (!error) {
+                    CVReturn status = CVMetalTextureCacheCreate(kCFAllocatorDefault, nil, _device, nil, &_textureCache);
+
+                    if (status != kCVReturnSuccess) {
+                        NSLog(@"Could not create texture cache: %d", status);
+                        @throw [NSException exceptionWithName:NSInternalInconsistencyException
+                                                       reason:@"Could not create texture cache"
+                                                     userInfo:nil];
+                    }
+                } else {
+                    NSLog(@"Cannot create metal shaders library: %@", error);
+                    @throw [NSException exceptionWithName:NSInternalInconsistencyException
+                                                   reason:@"Cannot create metal shaders library"
+                                                 userInfo:nil];
+                }
+
+                unsigned int indices[] = {
+                    // clang-format off
+                    0, 1, 3, // first triangle
+                    1, 2, 3  // second triangle
+                    // clang-format on
+                };
+                self.indexBuffer = [self.device newBufferWithBytes:indices length:sizeof(indices) options:MTLResourceOptionCPUCacheModeDefault];
+            } else {
+                NSLog(@"Could not create commandQueue");
+                @throw [NSException exceptionWithName:NSGenericException reason:@"Could not create commandQueue" userInfo:nil];
+            }
+        } else {
+            NSLog(@"Could not create metal device");
+            @throw [NSException exceptionWithName:NSGenericException reason:@"Could not create metal device" userInfo:nil];
+        }
+    }
+
+    return self;
+}
+
+- (void)flush
+{
+    if (self.textureCache) {
+        CVMetalTextureCacheFlush(self.textureCache, 0);
+    }
+}
+
+- (void)setupRenderPassDescriptorWithTexture:(id<MTLTexture>)destinationTexture
+{
+    self.renderPassDescriptor = [MTLRenderPassDescriptor renderPassDescriptor];
+    self.renderPassDescriptor.colorAttachments[0].clearColor = MTLClearColorMake(0, 0, 0, 1);
+    self.renderPassDescriptor.colorAttachments[0].texture = destinationTexture;
+    self.renderPassDescriptor.colorAttachments[0].loadAction = MTLLoadActionClear;
+    self.renderPassDescriptor.colorAttachments[0].storeAction = MTLStoreActionStore;
+}
+
+- (void)makeRenderPipelineWithVertexFunctionName:(NSString*)vertexFunctionName
+                            fragmentFunctionName:(NSString*)fragmentFunctionName
+{
+    id<MTLFunction> vertexFunc = [self.library newFunctionWithName:vertexFunctionName];
+
+    if (vertexFunc) {
+        id<MTLFunction> fragmentFunc = [self.library newFunctionWithName:fragmentFunctionName];
+
+        if (fragmentFunc) {
+            self.pipelineState = [self buildRenderPipelineStateWithVertexFunction:vertexFunc fragmentFunction:fragmentFunc];
+        } else {
+            @throw [NSException exceptionWithName:NSInternalInconsistencyException
+                                           reason:[NSString stringWithFormat:@"Could not create fragment function %@", fragmentFunctionName]
+                                         userInfo:nil];
+        }
+    } else {
+        @throw [NSException exceptionWithName:NSInternalInconsistencyException
+                                       reason:[NSString stringWithFormat:@"Could not create vertex function %@", vertexFunctionName]
+                                     userInfo:nil];
+    }
+}
+
+- (id<MTLRenderPipelineState>)buildRenderPipelineStateWithVertexFunction:(id<MTLFunction>)vertexFunction
+                                                        fragmentFunction:(id<MTLFunction>)fragmentFunction
+{
+    MTLRenderPipelineDescriptor* pipelineDescriptor = [MTLRenderPipelineDescriptor new];
+    pipelineDescriptor.label = @"Render Pipeline";
+    pipelineDescriptor.vertexFunction = vertexFunction;
+    pipelineDescriptor.fragmentFunction = fragmentFunction;
+    pipelineDescriptor.colorAttachments[0].pixelFormat = MTLPixelFormatRGBA8Unorm;
+
+    NSError* error = nil;
+
+    id<MTLRenderPipelineState> renderPipelineState = [self.device newRenderPipelineStateWithDescriptor:pipelineDescriptor error:&error];
+
+    if (error) {
+        @throw [NSException exceptionWithName:NSInternalInconsistencyException
+                                       reason:[NSString stringWithFormat:@"Could not compile render pipeline state: %@", error]
+                                     userInfo:nil];
+    }
+
+    return renderPipelineState;
+}
+
+@end
+//MARK: MetalHelper -- End
+
+//MARK: BNBCopyableMetalLayer -- Start
+@implementation BNBCopyableMetalLayer
+
+- (id<CAMetalDrawable>)nextDrawable
+{
+    self.lastDrawable = self.currentDrawable;
+    self.currentDrawable = [super nextDrawable];
+
+    return self.currentDrawable;
+}
+
+- (void)setFramebufferOnly:(BOOL)framebufferOnly
+{
+    [super setFramebufferOnly:NO];
+}
+
+@end
+//MARK: BNBCopyableMetalLayer -- End
+
+using namespace std::literals;
 
 namespace bnb
 {
-    // Macos uses GL_TEXTURE_RECTANGLE instead of GL_TEXTURE_2D.
-    // On OS X, CoreVideo produces GL_TEXTURE_RECTANGLE objects, because GL_TEXTURE_2D would
-    // waste a lot of memory, while on iOS, it produces GL_TEXTURE_2D objects because
-    // GL_TEXTURE_RECTANGLE doesn't exist, nor is it necessary.
-    // Is necessary normalization of coordinates. vTexCoord = aTexCoord  * vec2(width, height)
-    // https://stackoverflow.com/questions/13933503/core-video-pixel-buffers-as-gl-texture-2d
-    const char* vs_default_base =
-            " precision highp float; \n "
-            " layout (location = 0) in vec3 aPos; \n"
-            " layout (location = 1) in vec2 aTexCoord; \n"
-            " uniform int width; \n"
-            " uniform int height; \n"
-            "out vec2 vTexCoord; \n"
-            "void main() \n"
-            "{ \n"
-                " gl_Position = vec4(aPos, 1.0); \n"
-                " vTexCoord = aTexCoord  * vec2(width, height); \n"
-            "} \n";
-
-    const char* ps_default_base =
-            "precision mediump float; \n"
-            "in vec2 vTexCoord; \n"
-            "out vec4 FragColor; \n"
-            "uniform sampler2DRect uTexture; \n"
-            "void main() \n"
-            "{ \n"
-                "FragColor = texture(uTexture, vTexCoord); \n"
-            "} \n";
-
-    class ort_frame_surface_handler
-    {
-    private:
-        static const auto v_size = static_cast<uint32_t>(bnb::camera_orientation::deg_270) + 1;
-
+    //MARK: impl -- Start
+    struct offscreen_render_target::impl{
     public:
-        /**
-        * First array determines texture orientation for vertical flip transformation
-        * Second array determines texture's orientation
-        * Third one determines the plane vertices` positions in correspondence to the texture coordinates
-        */
-        static const float vertices[2][v_size][5 * 4];
-
-        explicit ort_frame_surface_handler(bnb::camera_orientation orientation, bool is_y_flip)
-            : m_orientation(static_cast<uint32_t>(orientation))
-            , m_y_flip(static_cast<uint32_t>(is_y_flip))
-        {
-            glGenVertexArrays(1, &m_vao);
-            glGenBuffers(1, &m_vbo);
-            glGenBuffers(1, &m_ebo);
-
-            glBindVertexArray(m_vao);
-
-            glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
-            glBufferData(GL_ARRAY_BUFFER, sizeof(vertices[m_y_flip][m_orientation]), vertices[m_y_flip][m_orientation], GL_STATIC_DRAW);
-
-            // clang-format off
-
-            unsigned int indices[] = {
-                // clang-format off
-                0, 1, 3, // first triangle
-                1, 2, 3  // second triangle
-                // clang-format on
-            };
-
-            // clang-format on
-
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ebo);
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-            // position attribute
-            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*) 0);
-            glEnableVertexAttribArray(0);
-            // texture coord attribute
-            glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*) (3 * sizeof(float)));
-            glEnableVertexAttribArray(1);
-
-            glBindVertexArray(0);
-            glBindBuffer(GL_ARRAY_BUFFER, 0);
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-        }
-
-        virtual ~ort_frame_surface_handler() final
-        {
-            if (m_vao != 0)
-                glDeleteVertexArrays(1, &m_vao);
-
-            if (m_vbo != 0)
-                glDeleteBuffers(1, &m_vbo);
-
-            if (m_ebo != 0)
-                glDeleteBuffers(1, &m_ebo);
-
-            m_vao = 0;
-            m_vbo = 0;
-            m_ebo = 0;
-        }
-
-        ort_frame_surface_handler(const ort_frame_surface_handler&) = delete;
-        ort_frame_surface_handler(ort_frame_surface_handler&&) = delete;
-
-        ort_frame_surface_handler& operator=(const ort_frame_surface_handler&) = delete;
-        ort_frame_surface_handler& operator=(ort_frame_surface_handler&&) = delete;
-
-        void update_vertices_buffer()
-        {
-            glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
-            glBufferData(GL_ARRAY_BUFFER, sizeof(vertices[m_y_flip][m_orientation]), vertices[m_y_flip][m_orientation], GL_STATIC_DRAW);
-            glBindBuffer(GL_ARRAY_BUFFER, 0);
-        }
-
-        void set_orientation(bnb::camera_orientation orientation)
-        {
-            if (m_orientation != static_cast<uint32_t>(orientation)) {
-                m_orientation = static_cast<uint32_t>(orientation);
-            }
-        }
-
-        void set_y_flip(bool y_flip)
-        {
-            if (m_y_flip != static_cast<uint32_t>(y_flip)) {
-                m_y_flip = static_cast<uint32_t>(y_flip);
-            }
-        }
-
-        void draw()
-        {
-            glBindVertexArray(m_vao);
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
-            glBindVertexArray(0);
-        }
-
+        explicit impl(size_t width, size_t height);
+        ~impl();
+        void cleanup_render_buffers();
+        void surface_changed(int32_t width, int32_t height);
+        void setup_offscreen_pixel_buffer(EPOrientation orientation);
+        std::tuple<int, int> getWidthHeight(EPOrientation orientation);
+        void setup_offscreen_render_target(EPOrientation orientation);
+        void activate_metal();
+        void flush_metal();
+        bnb::camera_orientation get_camera_orientation(EPOrientation orientation);
+        void draw(EPOrientation orientation);
+        CVPixelBufferRef get_oriented_image(EPOrientation orientation);
+        
+        void init();
+        void activate_context();
+        void prepare_rendering();
+        void orient_image(interfaces::orient_format orient);
+        void* get_image();
+        bnb::data_t read_current_buffer();
+        void* get_layer();
+        
     private:
-        uint32_t m_orientation = 0;
-        uint32_t m_y_flip = 0;
-        unsigned int m_vao = 0;
-        unsigned int m_vbo = 0;
-        unsigned int m_ebo = 0;
+        size_t m_width;
+        size_t m_height;
+        int m_prev_orientation = -1;
+        id<MTLCommandQueue> m_command_queue;
+        id<MTLBuffer> m_uniformBuffer;
+        BNBCopyableMetalLayer* effectPlayerLayer;
+        id<MTLBuffer> m_vertexBuffer;
+        id<MTLBuffer> m_indicesBuffer;
+        CVMetalTextureRef texture;
+        id<MTLBuffer> m_framebuffer{0};
+        id<MTLBuffer> m_postProcessingFramebuffer{0};
+        MTLPixelFormat m_pixelFormat = MTLPixelFormatRGBA8Unorm;
+        CVPixelBufferRef m_offscreenRenderPixelBuffer{nullptr};
+        CVMetalTextureRef m_offscreenRenderTexture{nullptr};
+        id<MTLTexture> m_offscreenRenderMetalTexture;
     };
 
-    const float ort_frame_surface_handler::vertices[2][ort_frame_surface_handler::v_size][5 * 4] =
-    {{ /* verical flip 0 */
-    {
-            // positions        // texture coords
-            1.0f,  1.0f, 0.0f, 1.0f, 0.0f, // top right
-            1.0f, -1.0f, 0.0f, 1.0f, 1.0f, // bottom right
-            -1.0f, -1.0f, 0.0f, 0.0f, 1.0f, // bottom left
-            -1.0f,  1.0f, 0.0f, 0.0f, 0.0f,  // top left
-    },
-    {
-            // positions        // texture coords
-            1.0f,  1.0f, 0.0f, 0.0f, 0.0f, // top right
-            1.0f, -1.0f, 0.0f, 1.0f, 0.0f, // bottom right
-            -1.0f, -1.0f, 0.0f, 1.0f, 1.0f, // bottom left
-            -1.0f,  1.0f, 0.0f, 0.0f, 1.0f,  // top left
-    },
-    {
-            // positions        // texture coords
-            1.0f,  1.0f, 0.0f, 0.0f, 1.0f, // top right
-            1.0f, -1.0f, 0.0f, 0.0f, 0.0f, // bottom right
-            -1.0f, -1.0f, 0.0f, 1.0f, 0.0f, // bottom left
-            -1.0f,  1.0f, 0.0f, 1.0f, 1.0f,  // top left
-    },
-    {
-            // positions        // texture coords
-            1.0f,  1.0f, 0.0f, 1.0f, 1.0f, // top right
-            1.0f, -1.0f, 0.0f, 0.0f, 1.0f, // bottom right
-            -1.0f, -1.0f, 0.0f, 0.0f, 0.0f, // bottom left
-            -1.0f,  1.0f, 0.0f, 1.0f, 0.0f,  // top left
+    offscreen_render_target::impl::impl(size_t width, size_t height): m_width(width), m_height(height){
+        activate_metal();
     }
-    },
-    { /* verical flip 1 */
+   
+    offscreen_render_target::impl::~impl()
     {
-            // positions        // texture coords
-            1.0f, -1.0f, 0.0f, 1.0f, 1.0f, // top right
-            1.0f,  1.0f, 0.0f, 1.0f, 0.0f, // bottom right
-            -1.0f,  1.0f, 0.0f, 0.0f, 0.0f, // bottom left
-            -1.0f, -1.0f, 0.0f, 0.0f, 1.0f,  // top left
-    },
-    {
-            // positions        // texture coords
-            1.0f, -1.0f, 0.0f, 1.0f, 0.0f, // top right
-            1.0f,  1.0f, 0.0f, 0.0f, 0.0f, // bottom right
-            -1.0f,  1.0f, 0.0f, 0.0f, 1.0f, // bottom left
-            -1.0f, -1.0f, 0.0f, 1.0f, 1.0f,  // top left
-    },
-    {
-            // positions        // texture coords
-            1.0f, -1.0f, 0.0f, 0.0f, 0.0f, // top right
-            1.0f,  1.0f, 0.0f, 0.0f, 1.0f, // bottom right
-            -1.0f,  1.0f, 0.0f, 1.0f, 1.0f, // bottom left
-            -1.0f, -1.0f, 0.0f, 1.0f, 0.0f,  // top left
-    },
-    {
-            // positions        // texture coords
-            1.0f, -1.0f, 0.0f, 0.0f, 1.0f, // top right
-            1.0f,  1.0f, 0.0f, 1.0f, 1.0f, // bottom right
-            -1.0f,  1.0f, 0.0f, 1.0f, 0.0f, // bottom left
-            -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,  // top left
+        [[MetalHelper shared] releaseResources];
+        cleanup_render_buffers();
     }
-    }};
-} // bnb
-
-NSOpenGLContext* m_GLContext{nullptr};
-
-namespace bnb
-{
-    offscreen_render_target::offscreen_render_target(uint32_t width, uint32_t height)
-        : m_width(width)
-        , m_height(height) {}
-
-    offscreen_render_target::~offscreen_render_target()
-    {
-        if (m_videoTextureCache) {
-            CFRelease(m_videoTextureCache);
-        }
-        cleanupRenderBuffers();
-        destroyContext();
-    }
-
-    void offscreen_render_target::cleanupRenderBuffers()
+   
+    void offscreen_render_target::impl::cleanup_render_buffers()
     {
         if (m_offscreenRenderPixelBuffer) {
             CFRelease(m_offscreenRenderPixelBuffer);
@@ -240,300 +262,251 @@ namespace bnb
             CFRelease(m_offscreenRenderTexture);
             m_offscreenRenderTexture = nullptr;
         }
-        if (m_framebuffer != 0) {
-            glDeleteFramebuffers(1, &m_framebuffer);
-            m_framebuffer = 0;
-        }
-        cleanPostProcessRenderingTargets();
-        if (m_postProcessingFramebuffer != 0) {
-            glDeleteFramebuffers(1, &m_postProcessingFramebuffer);
-            m_postProcessingFramebuffer = 0;
-        }
     }
-
-    void offscreen_render_target::cleanPostProcessRenderingTargets()
+   
+    void offscreen_render_target::impl::surface_changed(int32_t width, int32_t height)
     {
-        if (m_offscreenPostProcessingPixelBuffer) {
-            CFRelease(m_offscreenPostProcessingPixelBuffer);
-            m_offscreenPostProcessingPixelBuffer = nullptr;
-        }
-        if (m_offscreenPostProcessingRenderTexture) {
-            CFRelease(m_offscreenPostProcessingRenderTexture);
-            m_offscreenPostProcessingRenderTexture = nullptr;
-        }
-    }
-
-    void offscreen_render_target::init()
-    {
-        runOnMainQueue([this]() { 
-            createContext();
-            loadGladFunctions();
-            glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
-        });
-        activate_context();
-
-        setupTextureCache();
-        setupRenderBuffers();
-
-        m_program = std::make_unique<program>("OrientationChange", vs_default_base, ps_default_base);
-        m_frameSurfaceHandler = std::make_unique<ort_frame_surface_handler>(bnb::camera_orientation::deg_0, false);
-    }
-
-    void offscreen_render_target::createContext()
-    {
-        if (m_GLContext != nil) {
-            return;
-        }
-
-        static std::once_flag nsGLContextOnceFlag;
-        std::call_once(nsGLContextOnceFlag, []() {
-            NSOpenGLPixelFormatAttribute pixelFormatAttributes[] = {
-                NSOpenGLPFAOpenGLProfile,
-                (NSOpenGLPixelFormatAttribute)NSOpenGLProfileVersion4_1Core,
-                NSOpenGLPFADoubleBuffer,
-                NSOpenGLPFAAccelerated, 0,
-                0
-            };
-
-            NSOpenGLPixelFormat *pixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:pixelFormatAttributes];
-            if (pixelFormat == nil) {
-                NSLog(@"Error: No appropriate pixel format found");
-            }
-            m_GLContext = [[NSOpenGLContext alloc] initWithFormat:pixelFormat shareContext:nil];
-            if (m_GLContext == nil) {
-                NSLog(@"Unable to create an OpenGL context. The GPUImage framework requires OpenGL support to work.");
-            }
-
-            [m_GLContext makeCurrentContext];
-        });
-    }
-
-    void offscreen_render_target::activate_context()
-    {
-        if ([NSOpenGLContext currentContext] != m_GLContext) {
-            if (m_GLContext != nil) {
-                [m_GLContext makeCurrentContext];
-            } else {
-                NSLog(@"Error: The OGL context has not been created yet");
-            }
-        }
-    }
-
-    void offscreen_render_target::destroyContext()
-    {
-        if ([NSOpenGLContext currentContext] == m_GLContext) {
-            [NSOpenGLContext clearCurrentContext];
-            m_GLContext = nil;
-        }
-    }
-
-    void offscreen_render_target::loadGladFunctions()
-    {
-        // it's only need for use while working with dynamic libs
-        utility::load_glad_functions((GLADloadproc) nsGLGetProcAddress);
-
-        if (0 == gladLoadGLLoader((GLADloadproc) nsGLGetProcAddress)) {
-            throw std::runtime_error("gladLoadGLLoader error");
-        }
-    }
-
-    void offscreen_render_target::setupTextureCache()
-    {
-        if (m_videoTextureCache != NULL) {
-            return;
-        }
-        CVReturn err = CVOpenGLTextureCacheCreate(kCFAllocatorDefault, NULL, m_GLContext.CGLContextObj,
-                CGLGetPixelFormat(m_GLContext.CGLContextObj), NULL, &m_videoTextureCache);
-
-        if (err != noErr) {
-            @throw [NSException exceptionWithName:NSInternalInconsistencyException
-                    reason:@"Cannot initialize texture cache"
-                    userInfo:nil];
-        }
-    }
-
-    void offscreen_render_target::setupRenderBuffers()
-    {
-        GL_CALL(glGenFramebuffers(1, &m_framebuffer));
-        GL_CALL(glGenFramebuffers(1, &m_postProcessingFramebuffer));
-
-        GL_CALL(glBindFramebuffer(GL_FRAMEBUFFER, m_framebuffer));
-
-        setupOffscreenPixelBuffer(m_offscreenRenderPixelBuffer);
-        setupOffscreenRenderTarget(m_offscreenRenderPixelBuffer, m_offscreenRenderTexture);
-    }
-
-    void offscreen_render_target::setupOffscreenPixelBuffer(CVPixelBufferRef& pb)
-    {
-        CFDictionaryRef empty = CFDictionaryCreate(kCFAllocatorDefault, NULL, NULL, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
-        CFMutableDictionaryRef attrs = CFDictionaryCreateMutable(kCFAllocatorDefault, 1, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
-        CFDictionarySetValue(attrs, kCVPixelBufferIOSurfacePropertiesKey, empty);
-        CVReturn err = CVPixelBufferCreate(kCFAllocatorDefault, m_width, m_height, kCVPixelFormatType_32BGRA, attrs, &pb);
-
-        if (err != noErr) {
-            @throw [NSException exceptionWithName:NSInternalInconsistencyException
-                            reason:@"Cannot create offscreen pixel buffer"
-                            userInfo:nil];
-        }
-        CFRelease(empty);
-        CFRelease(attrs);
-    }
-
-    void offscreen_render_target::setupOffscreenRenderTarget(CVPixelBufferRef& pb, CVOpenGLTextureRef& texture)
-    {
-        CVReturn err = CVOpenGLTextureCacheCreateTextureFromImage(kCFAllocatorDefault, m_videoTextureCache,
-                pb, NULL, &texture);
-
-        if (err != noErr) {
-            @throw [NSException exceptionWithName:NSInternalInconsistencyException
-                    reason:@"Cannot create GL texture from pixel buffer"
-                    userInfo:nil];
-        }
-    }
-
-    void offscreen_render_target::surface_changed(int32_t width, int32_t height)
-    {
+        cleanup_render_buffers();
+   
         m_width = width;
         m_height = height;
-
-        cleanupRenderBuffers();
-        setupRenderBuffers();
     }
-
-    void offscreen_render_target::prepare_rendering()
+   
+    void offscreen_render_target::impl::setup_offscreen_pixel_buffer(EPOrientation orientation)
     {
-        GL_CALL(glBindFramebuffer(GL_FRAMEBUFFER, m_framebuffer));
-        GL_CALL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                        CVOpenGLTextureGetTarget(m_offscreenRenderTexture),
-                        CVOpenGLTextureGetName(m_offscreenRenderTexture), 0));
-
-        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-            GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-            std::cout << "[ERROR] Failed to make complete framebuffer object " << status << std::endl;
-            return;
-        }
-    }
-
-    void offscreen_render_target::preparePostProcessingRendering()
-    {
-        GL_CALL(glBindFramebuffer(GL_FRAMEBUFFER, m_postProcessingFramebuffer));
-        GL_CALL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                        CVOpenGLTextureGetTarget(m_offscreenPostProcessingRenderTexture),
-                        CVOpenGLTextureGetName(m_offscreenPostProcessingRenderTexture), 0));
-
-        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-            GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-            std::cout << "[ERROR] Failed to make complete post processing framebuffer object " << status << std::endl;
-            return;
-        }
-
-        auto width = CVPixelBufferGetWidth(m_offscreenPostProcessingPixelBuffer);
-        auto height = CVPixelBufferGetHeight(m_offscreenPostProcessingPixelBuffer);
-        GL_CALL(glViewport(0, 0, GLsizei(width), GLsizei(height)));
-
-        GL_CALL(glActiveTexture(GLenum(GL_TEXTURE0)));
-
-        GL_CALL(glBindTexture(CVOpenGLTextureGetTarget(m_offscreenRenderTexture), CVOpenGLTextureGetName(m_offscreenRenderTexture)));
-        glTexParameteri(GLenum(GL_TEXTURE_RECTANGLE), GLenum(GL_TEXTURE_MIN_FILTER), GL_LINEAR);
-        glTexParameteri(GLenum(GL_TEXTURE_RECTANGLE), GLenum(GL_TEXTURE_MAG_FILTER), GL_LINEAR);
-        glTexParameterf(GLenum(GL_TEXTURE_RECTANGLE), GLenum(GL_TEXTURE_WRAP_S), GLfloat(GL_CLAMP_TO_EDGE));
-        glTexParameterf(GLenum(GL_TEXTURE_RECTANGLE), GLenum(GL_TEXTURE_WRAP_T), GLfloat(GL_CLAMP_TO_EDGE));
-    }
-
-    void offscreen_render_target::orient_image(interfaces::orient_format orient)
-    {
-        GL_CALL(glFlush());
-
-        if (orient.orientation == camera_orientation::deg_0 && !orient.is_y_flip) {
-            return;
-        }
-
-        if (m_program == nullptr) {
-            std::cout << "[ERROR] Not initialization m_program" << std::endl;
-            return;
-        }
-        if (m_frameSurfaceHandler == nullptr) {
-            std::cout << "[ERROR] Not initialization m_frameSurfaceHandler" << std::endl;
-            return;
-        }
-
-        if (m_offscreenPostProcessingPixelBuffer == nullptr) {
-            setupOffscreenPixelBuffer(m_offscreenPostProcessingPixelBuffer);
-            setupOffscreenRenderTarget(m_offscreenPostProcessingPixelBuffer, m_offscreenPostProcessingRenderTexture);
-        }
-
-        preparePostProcessingRendering();
-        m_program->use();
-        m_program->set_uniform("width", (int)m_width);
-        m_program->set_uniform("height", (int)m_height);
-        m_frameSurfaceHandler->set_orientation(orient.orientation);
-        m_frameSurfaceHandler->set_y_flip(orient.is_y_flip);
-        // Call once for perf
-        m_frameSurfaceHandler->update_vertices_buffer();
-        m_frameSurfaceHandler->draw();
-        m_program->unuse();
-        GL_CALL(glFlush());
-
-        m_oriented = true;
-    }
-
-    data_t offscreen_render_target::read_current_buffer()
-    {
-        size_t size = m_width * m_height * 4;
-        data_t data = data_t{ std::make_unique<uint8_t[]>(size), size };
-
-        GL_CALL(glReadPixels(0, 0, m_width, m_height, GL_RGBA, GL_UNSIGNED_BYTE, data.data.get()));
-        GL_CALL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
-
-        return data;
-    }
-
-    void* offscreen_render_target::get_image(interfaces::image_format format)
-    {
-        if (format == interfaces::image_format::texture) {
-            if (m_oriented) {
-                m_oriented = false;
-                CVPixelBufferRetain(m_offscreenPostProcessingPixelBuffer);
-                return (void*)m_offscreenPostProcessingPixelBuffer;
-            }
-            CVPixelBufferRetain(m_offscreenRenderPixelBuffer);
-            return (void*)m_offscreenRenderPixelBuffer;
-        }
-
-        CVPixelBufferRef pixel_buffer = NULL;
-
-        NSDictionary* cvBufferProperties = @{
-            (__bridge NSString*)kCVPixelBufferOpenGLCompatibilityKey : @YES,
+        auto [width, height] = getWidthHeight(orientation);
+        NSDictionary* attrs = @{
+            (__bridge NSString*) kCVPixelBufferMetalCompatibilityKey: @YES,
+            (__bridge NSString*) kCVPixelBufferIOSurfacePropertiesKey: @{}
         };
-
-        CVReturn err = CVPixelBufferCreate(
-            kCFAllocatorDefault,
-            m_width,
-            m_height,
-            // We get data from oep in RGBA, macos defined kCVPixelFormatType_32RGBA but not supported
-            // and we have to choose a different type. This does not in any way affect further
-            // processing, inside bytes still remain in the order of the RGBA.
-            kCVPixelFormatType_32BGRA,
-            (__bridge CFDictionaryRef)(cvBufferProperties),
-            &pixel_buffer);
-
-        if (err) {
-            NSLog(@"Pixel buffer not created");
-            return nullptr;
+   
+        // We get data from oep in RGBA, macos defined kCVPixelFormatType_32RGBA but not supported
+        // and we have to choose a different type. This does not in any way affect further
+        // processing, inside bytes still remain in the order of the RGBA.
+        CVReturn err = CVPixelBufferCreate(kCFAllocatorDefault, width, height, kCVPixelFormatType_32BGRA, (__bridge    CFDictionaryRef) attrs, &m_offscreenRenderPixelBuffer);
+   
+        if (err != noErr) {
+            @throw [NSException exceptionWithName:NSInternalInconsistencyException
+                           reason:@"Cannot create offscreen pixel buffer"
+                           userInfo:nil];
         }
-
-        CVPixelBufferLockBaseAddress(pixel_buffer, 0);
-
-        GLubyte *pixelBufferData = (GLubyte *)CVPixelBufferGetBaseAddress(pixel_buffer);
-        glReadPixels(0, 0, m_width, m_height, GL_RGBA, GL_UNSIGNED_BYTE, pixelBufferData);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-        CVPixelBufferUnlockBaseAddress(pixel_buffer, 0);
-        if (format == interfaces::image_format::nv12) {
-            pixel_buffer = convertRGBAtoNV12(pixel_buffer, vrange::full_range);
+    }
+   
+    std::tuple<int, int> offscreen_render_target::impl::getWidthHeight(EPOrientation orientation)
+     {
+         auto width = orientation == EPOrientation::EPOrientationAngles90 || orientation ==    EPOrientation::EPOrientationAngles270 ? m_height : m_width;
+         auto height = orientation == EPOrientation::EPOrientationAngles90 || orientation ==    EPOrientation::EPOrientationAngles270 ? m_width : m_height;
+         return {m_width, m_height};
+     }
+   
+    void offscreen_render_target::impl::setup_offscreen_render_target(EPOrientation orientation)
+    {
+         auto [width, height] = getWidthHeight(orientation);
+         CVReturn err = CVMetalTextureCacheCreateTextureFromImage(
+             kCFAllocatorDefault,
+             [MetalHelper shared].textureCache,
+             m_offscreenRenderPixelBuffer,
+             NULL,
+             m_pixelFormat,
+             width,
+             height,
+             0,
+             &m_offscreenRenderTexture);
+   
+         if (err != noErr) {
+             @throw [NSException exceptionWithName:NSInternalInconsistencyException
+                            reason:@"Cannot create Metal texture from pixel buffer for the class    BNBOffscreenEffectPlayer"
+                           userInfo:nil];
+         }
+   
+        m_offscreenRenderMetalTexture = CVMetalTextureGetTexture(m_offscreenRenderTexture);
+   
+         // Create once
+         [[MetalHelper shared] setupRenderPassDescriptorWithTexture:m_offscreenRenderMetalTexture];
+         [[MetalHelper shared] makeRenderPipelineWithVertexFunctionName:@"BNBOEPShaders::vertex_main"    fragmentFunctionName:@"BNBOEPShaders::fragment_main"];
+    }
+   
+    void offscreen_render_target::impl::activate_metal()
+    {
+        m_command_queue = [MetalHelper shared].commandQueue;
+        effectPlayerLayer = [[BNBCopyableMetalLayer alloc] init];
+    }
+   
+    void offscreen_render_target::impl::flush_metal()
+    {
+        [[MetalHelper shared] flush];
+    }
+   
+    bnb::camera_orientation offscreen_render_target::impl::get_camera_orientation(EPOrientation orientation)
+    {
+        switch (orientation) {
+            case EPOrientation::EPOrientationAngles180:
+                return bnb::camera_orientation::deg_180;
+            case EPOrientation::EPOrientationAngles90:
+                return bnb::camera_orientation::deg_90;
+            case EPOrientation::EPOrientationAngles270:
+                return bnb::camera_orientation::deg_270;
+            default:
+                return bnb::camera_orientation::deg_0;
         }
-
-        return (void*)pixel_buffer;
+    }
+   
+    void offscreen_render_target::impl::draw(EPOrientation orientation)
+    {
+        id<MTLTexture> layerTexture = effectPlayerLayer.lastDrawable.texture;
+   
+        if (layerTexture) {
+            id<MTLCommandBuffer> commandBuffer = [m_command_queue commandBuffer];
+   
+            if (commandBuffer) {
+                MetalHelper* helper = [MetalHelper shared];
+                auto renderDescriptor = helper.renderPassDescriptor;
+                id<MTLRenderCommandEncoder> renderEncoder = [commandBuffer    renderCommandEncoderWithDescriptor:renderDescriptor];
+   
+                if (renderEncoder) {
+                    uint32_t orientation_data = static_cast<uint32_t>(orientation);
+                    [renderEncoder setVertexBytes:&orientation_data length:sizeof(orientation_data) atIndex:0];
+   
+   
+                    [renderEncoder setRenderPipelineState:helper.pipelineState];
+                    [renderEncoder setFragmentTexture:layerTexture atIndex:0];
+                    [renderEncoder drawIndexedPrimitives:MTLPrimitiveTypeTriangle indexCount:6    indexType:MTLIndexTypeUInt32 indexBuffer:helper.indexBuffer indexBufferOffset:0];
+   
+                    [renderEncoder endEncoding];
+                    [commandBuffer commit];
+                    [commandBuffer waitUntilCompleted];
+                } else {
+                    NSLog(@"Rendering failed. Cannot create render encoder");
+                }
+            } else {
+                NSLog(@"Rendering failed. Cannot create command buffer");
+            }
+        }
     }
 
-} // bnb
+     CVPixelBufferRef offscreen_render_target::impl::get_oriented_image(EPOrientation orientation)
+     {
+         if (m_prev_orientation != static_cast<int>(orientation)) {
+             if (m_offscreenRenderPixelBuffer != nullptr) {
+                 cleanup_render_buffers();
+             }
+             m_prev_orientation = static_cast<int>(orientation);
+         }
+    
+         if (m_offscreenRenderPixelBuffer == nullptr) {
+             setup_offscreen_pixel_buffer(orientation);
+             setup_offscreen_render_target(orientation);
+         }
+    
+         draw(orientation);
+         flush_metal();
+         CVPixelBufferRetain(m_offscreenRenderPixelBuffer);
+         return m_offscreenRenderPixelBuffer;
+     }
+    
+    void offscreen_render_target::impl::init() {}
+    void offscreen_render_target::impl::activate_context() {}
+    void offscreen_render_target::impl::prepare_rendering() {}
+    void offscreen_render_target::impl::orient_image(interfaces::orient_format orient) {}
+    
+    void* offscreen_render_target::impl::get_image(){
+        return get_oriented_image(EPOrientationAngles180);
+    }
+
+    bnb::data_t offscreen_render_target::impl::read_current_buffer() {
+         size_t size = m_width * m_height * 4;
+         data_t data = data_t{ std::make_unique<uint8_t[]>(size), size };
+    
+         MTLRegion region = {{ 0, 0, 0 },             // MTLOrigin
+                             {m_width, m_height, 1}}; // MTLSize
+    
+         [m_offscreenRenderMetalTexture getBytes: data.data.get()
+                                             bytesPerRow: m_width * 4
+                                              fromRegion: region
+                                             mipmapLevel: 0];
+         return data;
+    }
+
+    void* offscreen_render_target::impl::get_layer(){
+        return (void*)CFBridgingRetain(effectPlayerLayer);
+    }
+//MARK: impl -- Finish
+
+//MARK: offscreen_render_target -- Start
+    offscreen_render_target::offscreen_render_target(size_t width, size_t height)
+        : m_impl(std::make_unique<impl>(width, height))
+    {
+        activate_metal();
+    }
+
+    offscreen_render_target::~offscreen_render_target() = default;
+
+    void offscreen_render_target::cleanup_render_buffers(){
+        m_impl->cleanup_render_buffers();
+    }
+    void offscreen_render_target::surface_changed(int32_t width, int32_t height){
+        m_impl->surface_changed(width, height);
+    }
+
+    void offscreen_render_target::setup_offscreen_pixel_buffer(EPOrientation orientation){
+        m_impl->setup_offscreen_pixel_buffer(orientation);
+    }
+
+    std::tuple<int, int> offscreen_render_target::getWidthHeight(EPOrientation orientation){
+        return m_impl->getWidthHeight(orientation);
+    }
+
+    void offscreen_render_target::setup_offscreen_render_target(EPOrientation orientation){
+        m_impl->setup_offscreen_render_target(orientation);
+    }
+
+    void offscreen_render_target::activate_metal(){
+        m_impl->activate_metal();
+    }
+
+    void offscreen_render_target::flush_metal(){
+        m_impl->flush_metal();
+    }
+
+    bnb::camera_orientation offscreen_render_target::get_camera_orientation(EPOrientation orientation){
+        return m_impl->get_camera_orientation(orientation);
+    }
+
+    void offscreen_render_target::draw(EPOrientation orientation){
+        m_impl->draw(orientation);
+    }
+
+    CVPixelBufferRef offscreen_render_target::get_oriented_image(EPOrientation orientation){
+        return m_impl->get_oriented_image(orientation);
+    }
+
+    void offscreen_render_target::init(){
+        m_impl->init();
+    }
+
+    void offscreen_render_target::activate_context(){
+        m_impl->activate_context();
+    }
+
+    void offscreen_render_target::prepare_rendering(){
+        m_impl->prepare_rendering();
+    }
+
+    void offscreen_render_target::orient_image(interfaces::orient_format orient){
+        m_impl->orient_image(orient);
+    }
+
+    void* offscreen_render_target::get_image(){
+        return m_impl->get_image();
+    }
+
+    bnb::data_t offscreen_render_target::read_current_buffer(){
+        return m_impl->read_current_buffer();
+    }
+
+    void* offscreen_render_target::get_layer(){
+        return m_impl->get_layer();
+    }
+
+}; // bnb
+    //MARK: offscreen_render_target -- Finish

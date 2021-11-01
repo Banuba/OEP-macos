@@ -16,7 +16,6 @@ set(BNB_VIDEO_PLAYER ON)
 include(${CMAKE_CURRENT_LIST_DIR}/cmake/utils.cmake)
 
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/bnb_sdk)
-add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/third/glad)
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/libraries)
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/offscreen_effect_player)
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/offscreen_render_target)
@@ -51,6 +50,7 @@ set(RESOURCES
     ${BNB_RESOURCES_FOLDER}/Main.storyboard
     ${BNB_RESOURCES_FOLDER}/bnb_viewer.icns
     ${BNB_RESOURCES_FOLDER}/effects
+    ${BNB_RESOURCES_FOLDER}/OEPShaders.metallib
 )
 
 set(CMAKE_XCODE_GENERATE_SCHEME YES)
@@ -97,12 +97,11 @@ set_target_properties(${APP_NAME} PROPERTIES
 )
 
 target_link_libraries(${APP_NAME}
+    "-framework ${BANUBA_OEP_FRAMEWORK}"
+    "-framework BanubaEffectPlayer"
     "-framework Accelerate"
     "-framework Cocoa"
     "-framework Foundation"
-    "-framework OpenGL"
-    "-framework BanubaEffectPlayer"
-    "-framework ${BANUBA_OEP_FRAMEWORK}"
 )
 
 set_target_properties(${APP_NAME} PROPERTIES XCODE_ATTRIBUTE_FRAMEWORK_SEARCH_PATHS "${SDK_FRAMEWORK_PATH}/$<IF:$<CONFIG:Debug>,debug,release>")

@@ -41,7 +41,7 @@ namespace bnb
         void read_current_buffer(std::function<void(bnb::data_t data)> callback);
 
         #ifdef __APPLE__
-            void read_pixel_buffer(oep_image_ready_pb_cb callback, interfaces::image_format format);
+            void read_pixel_buffer(oep_image_ready_pb_cb callback);
         #endif
 
     private:

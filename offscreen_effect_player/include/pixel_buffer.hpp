@@ -9,7 +9,7 @@ namespace bnb
     using oep_sptr = std::shared_ptr<offscreen_effect_player>;
     using oep_wptr = std::weak_ptr<offscreen_effect_player>;
 
-    class pixel_buffer: public interfaces::pixel_buffer
+    class pixel_buffer: public oep::interfaces::pixel_buffer
     {
     public:
         pixel_buffer(oep_sptr oep_sptr, uint32_t width, uint32_t height, camera_orientation orientation);
@@ -18,7 +18,7 @@ namespace bnb
         void unlock() override;
         bool is_locked() override;
         
-        void get_image(oep_image_ready_pb_cb callback, interfaces::image_format format) override;
+        void get_image(oep_image_ready_pb_cb callback) override;
 
     private:
         oep_wptr m_oep_ptr;
