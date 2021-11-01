@@ -3,10 +3,6 @@
 #include <bnb/types/base_types.hpp>
 
 #include "interfaces/offscreen_render_target.hpp"
-#include "BNBCopyableMetalLayer.h"
-
-#import <Metal/Metal.h>
-#import <MetalKit/MetalKit.h>
 #import <CoreMedia/CoreMedia.h>
 
 namespace bnb
@@ -44,20 +40,7 @@ namespace bnb
         void* get_layer() override;
         
     private:
-        size_t m_width;
-        size_t m_height;
-        int m_prev_orientation = -1;
-        id<MTLCommandQueue> m_command_queue;
-        id<MTLBuffer> m_uniformBuffer;
-        BNBCopyableMetalLayer* effectPlayerLayer;
-        id<MTLBuffer> m_vertexBuffer;
-        id<MTLBuffer> m_indicesBuffer;
-        CVMetalTextureRef texture;
-        id<MTLBuffer> m_framebuffer{0};
-        id<MTLBuffer> m_postProcessingFramebuffer{0};
-        MTLPixelFormat m_pixelFormat = MTLPixelFormatRGBA8Unorm;
-        CVPixelBufferRef m_offscreenRenderPixelBuffer{nullptr};
-        CVMetalTextureRef m_offscreenRenderTexture{nullptr};
-        id<MTLTexture> m_offscreenRenderMetalTexture;
+        struct impl;
+        std::unique_ptr<impl> m_impl;
     };
 } // bnb
