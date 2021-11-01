@@ -400,6 +400,7 @@ namespace bnb
     
          draw(orientation);
          flush_metal();
+         CVPixelBufferRetain(m_offscreenRenderPixelBuffer);
          return m_offscreenRenderPixelBuffer;
      }
     

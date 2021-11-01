@@ -42,7 +42,10 @@ namespace bnb
 
     offscreen_effect_player::~offscreen_effect_player()
     {
-        m_ep->surface_destroyed();
+        auto task = [this]() {
+            m_ep->surface_destroyed();
+        };
+        m_scheduler.enqueue(task).get();
     }
 
     void offscreen_effect_player::process_image_async(std::shared_ptr<full_image_t> image, oep_pb_ready_cb callback,
