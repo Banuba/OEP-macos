@@ -118,8 +118,8 @@ class ViewController: NSViewController, NSWindowDelegate, AVCaptureVideoDataOutp
 
                 let image = NSImage(cgImage: cgImageSafe, size: NSSize(width: width, height: height))
 
-                DispatchQueue.main.async {
-                    self.imageView.image = image
+                DispatchQueue.main.async { [weak self] in
+                    self?.imageView.image = image
                 }
             }
         }
@@ -129,8 +129,8 @@ class ViewController: NSViewController, NSWindowDelegate, AVCaptureVideoDataOutp
         guard let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
 
         if (self.effectLoaded) {
-            oep?.processImage(imageBuffer, completion: {(resPixelBuffer) in
-                self.renderPixelBuffer(resPixelBuffer)
+            oep?.processImage(imageBuffer, completion: { [weak self] (resPixelBuffer) in
+                self?.renderPixelBuffer(resPixelBuffer)
             })
         }
         else {
