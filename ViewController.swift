@@ -106,19 +106,21 @@ class ViewController: NSViewController, NSWindowDelegate, AVCaptureVideoDataOutp
 
     func renderPixelBuffer(_ pixelBuffer: CVPixelBuffer?) {
         if let resultPixelBuffer = pixelBuffer {
-            var cgImage: CGImage?
+            autoreleasepool {
+                var cgImage: CGImage?
 
-            VTCreateCGImageFromCVPixelBuffer(resultPixelBuffer, nil, &cgImage)
+                VTCreateCGImageFromCVPixelBuffer(resultPixelBuffer, nil, &cgImage)
 
-            guard let cgImageSafe = cgImage else { return }
+                guard let cgImageSafe = cgImage else { return }
 
-            let width = CVPixelBufferGetWidth(resultPixelBuffer)
-            let height = CVPixelBufferGetHeight(resultPixelBuffer)
+                let width = CVPixelBufferGetWidth(resultPixelBuffer)
+                let height = CVPixelBufferGetHeight(resultPixelBuffer)
 
-            let image = NSImage(cgImage: cgImageSafe, size: NSSize(width: width, height: height))
+                let image = NSImage(cgImage: cgImageSafe, size: NSSize(width: width, height: height))
 
-            DispatchQueue.main.async {
-                self.imageView.image = image
+                DispatchQueue.main.async { [weak self] in
+                    self?.imageView.image = image
+                }
             }
         }
     }
@@ -127,8 +129,8 @@ class ViewController: NSViewController, NSWindowDelegate, AVCaptureVideoDataOutp
         guard let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
 
         if (self.effectLoaded) {
-            oep?.processImage(imageBuffer, completion: {(resPixelBuffer) in
-                self.renderPixelBuffer(resPixelBuffer)
+            oep?.processImage(imageBuffer, completion: { [weak self] (resPixelBuffer) in
+                self?.renderPixelBuffer(resPixelBuffer)
             })
         }
         else {
