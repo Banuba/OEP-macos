@@ -227,7 +227,6 @@ namespace bnb
             CFRelease(m_videoTextureCache);
         }
         cleanupRenderBuffers();
-        destroyContext();
     }
 
     void offscreen_render_target::cleanupRenderBuffers()
