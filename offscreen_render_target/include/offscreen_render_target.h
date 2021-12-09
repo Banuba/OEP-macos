@@ -22,6 +22,7 @@ namespace bnb
         ~offscreen_render_target();
 
         void init() override;
+        void deinit() override;
 
         void surface_changed(int32_t width, int32_t height) override;
 
@@ -69,5 +70,7 @@ namespace bnb
 
         std::unique_ptr<program> m_program;
         std::unique_ptr<ort_frame_surface_handler> m_frameSurfaceHandler;
+
+        std::once_flag m_deinit_flag;
     };
 } // bnb

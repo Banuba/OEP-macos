@@ -19,6 +19,14 @@ namespace bnb::interfaces
          */
         virtual void init() = 0;
 
+         /**
+         * Offscreen Render Target deinitialization. Includes deinitialization of gl context,
+         * buffers, support objects.
+         * 
+         * Example deinit()
+         */
+        virtual void deinit() = 0;
+
         /**
          * Notify about rendering surface being resized.
          * 

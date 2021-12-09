@@ -44,7 +44,7 @@ namespace bnb
     {
         auto task = [this]() {
             m_ep->surface_destroyed();
-            m_ort = nullptr;
+            m_ort->deinit();
         };
         m_scheduler.enqueue(task).get();
     }
