@@ -221,9 +221,7 @@ namespace bnb
         : m_width(width)
         , m_height(height) {}
 
-    offscreen_render_target::~offscreen_render_target()
-    {
-    }
+    offscreen_render_target::~offscreen_render_target() {}
 
     void offscreen_render_target::cleanupRenderBuffers()
     {
@@ -277,14 +275,13 @@ namespace bnb
     void offscreen_render_target::deinit(){
         activate_context();
         
-        std::call_once(m_deinit_flag, [this]() {
-            m_program.reset();
-            m_frameSurfaceHandler.reset();
-            if (m_videoTextureCache) {
-                CFRelease(m_videoTextureCache);
-            }
-            cleanupRenderBuffers();
-        });
+        m_program.reset();
+        m_frameSurfaceHandler.reset();
+        if (m_videoTextureCache) {
+            CFRelease(m_videoTextureCache);
+            m_videoTextureCache = nullptr;
+        }
+        cleanupRenderBuffers();
         
         destroyContext();
     }

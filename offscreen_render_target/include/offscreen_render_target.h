@@ -70,7 +70,5 @@ namespace bnb
 
         std::unique_ptr<program> m_program;
         std::unique_ptr<ort_frame_surface_handler> m_frameSurfaceHandler;
-
-        std::once_flag m_deinit_flag;
     };
 } // bnb
