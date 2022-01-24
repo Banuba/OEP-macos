@@ -1,9 +1,6 @@
 {
     "assets": {
         "attachments": {
-            "ComposerRT_color": {
-                "type": "color"
-            },
             "EffectRT0_color": {
                 "type": "color"
             },
@@ -36,26 +33,13 @@
                 "file_name": "images/afro_Normal.ktx",
                 "type": "texture"
             },
-            "background": {
-                "active": false,
-                "recognizer_feature_name": "background",
-                "type": "segmentation_mask"
-            },
             "brdf.ktx": {
                 "file_name": "images/brdf.ktx",
                 "type": "texture"
             },
-            "camera: tex_rgb": {
-                "format": "rgba",
-                "type": "camera"
-            },
-            "camera: tex_uv": {
-                "format": "uv",
-                "type": "camera"
-            },
-            "camera: tex_y": {
-                "format": "y",
-                "type": "camera"
+            "camera": {
+                "type": "procedural_texture",
+                "algorithm": "camera_composer"
             },
             "flare66.png": {
                 "file_name": "images/flare66.png",
@@ -136,63 +120,11 @@
             }
         },
         "materials": {
-            "$builtin$materials/camera": {
-                "parameters": {
-                    "bnb_camera_orientation": {
-                        "type": "vec4",
-                        "value": [
-                            1,
-                            0,
-                            0,
-                            1
-                        ]
-                    },
-                    "bnb_camera_scale": {
-                        "type": "vec4",
-                        "value": [
-                            1,
-                            0,
-                            0,
-                            1
-                        ]
-                    },
-                    "bnb_view_width_fraction": {
-                        "type": "vec4",
-                        "value": [
-                            1,
-                            0,
-                            0,
-                            0
-                        ]
-                    }
-                },
-                "samplers": [
-                    {
-                        "image": "camera: tex_y",
-                        "name": "tex_y"
-                    },
-                    {
-                        "image": "camera: tex_uv",
-                        "name": "tex_uv"
-                    },
-                    {
-                        "image": "camera: tex_rgb",
-                        "name": "tex_rgb"
-                    }
-                ],
-                "state": {
-                    "backfaces": true,
-                    "blend": "off",
-                    "colorwrite": true,
-                    "ztest": false,
-                    "zwrite": false
-                }
-            },
             "$builtin$materials/copy_pixels.0": {
                 "parameters": {},
                 "samplers": [
                     {
-                        "image": "ComposerRT_color",
+                        "image": "camera",
                         "name": "tex_src"
                     }
                 ],
@@ -464,7 +396,7 @@
                         "name": "tex_highlight"
                     },
                     {
-                        "image": "ComposerRT_color",
+                        "image": "camera",
                         "name": "glfx_BACKGROUND"
                     }
                 ],
@@ -507,13 +439,6 @@
             "mesh": "camera_surface",
             "type": "mesh_instance"
         },
-        "camera_surface": {
-            "materials": [
-                "$builtin$materials/camera"
-            ],
-            "mesh": "camera_surface",
-            "type": "mesh_instance"
-        },
         "face_tracker:0": {
             "face": "face0",
             "type": "face_tracker"
@@ -536,12 +461,6 @@
                 "ComposerRT_copy"
             ],
             "layer": "ComposerRT_copy"
-        },
-        "camera": {
-            "components": [
-                "camera_surface"
-            ],
-            "layer": "composer_pre"
         },
         "face_tracker0": {
             "components": [
@@ -1140,7 +1059,6 @@
             "spawn_entity47"
         ],
         "root": [
-            "camera",
             "face_tracker0",
             "ComposerRT_copy_append_to_root__",
             "finalColorFilter_append_to_root__"
@@ -1149,7 +1067,6 @@
     "layers": {
         "ComposerRT_copy": {},
         "Default": {},
-        "composer_pre": {},
         "finalColorFilter": {},
         "glas5": {},
         "glass": {},
@@ -1160,10 +1077,6 @@
     },
     "render_list": {
         "default": [
-            {
-                "layer": "composer_pre",
-                "render_target": "ComposerRT"
-            },
             {
                 "layer": "ComposerRT_copy",
                 "render_target": "EffectRT0"
@@ -1221,9 +1134,6 @@
         ]
     },
     "render_targets": {
-        "ComposerRT": [
-            "ComposerRT_color"
-        ],
         "EffectRT0": [
             "EffectRT0_color",
             "EffectRT0_depth"

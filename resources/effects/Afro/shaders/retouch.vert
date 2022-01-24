@@ -22,7 +22,11 @@ BNB_LAYOUT_LOCATION(3) BNB_IN vec4 attrib_red_mask;
 BNB_OUT(0) vec2 var_uv;
 BNB_OUT(1) vec2 var_bg_uv;
 
-BNB_OUT(2) mat4 sp;
+BNB_OUT(2+0) vec4 sp0;
+BNB_OUT(2+1) vec4 sp1;
+BNB_OUT(2+2) vec4 sp2;
+BNB_OUT(2+3) vec4 sp3;
+
 
 invariant gl_Position;
 
@@ -42,28 +46,28 @@ void main()
     var_uv = attrib_uv;
     var_bg_uv  = (gl_Position.xy / gl_Position.w) * 0.5 + 0.5;
     
-    sp[0].xy = var_bg_uv + vec2(sOfssetXneg, sOffsetYneg);
-    sp[1].xy = var_bg_uv + vec2(sOfssetXneg, sOffsetYpos);
-    sp[2].xy = var_bg_uv + vec2(sOffsetXpos, sOffsetYneg);
-    sp[3].xy = var_bg_uv + vec2(sOffsetXpos, sOffsetYpos);
+    sp0.xy = var_bg_uv + vec2(sOfssetXneg, sOffsetYneg);
+    sp1.xy = var_bg_uv + vec2(sOfssetXneg, sOffsetYpos);
+    sp2.xy = var_bg_uv + vec2(sOffsetXpos, sOffsetYneg);
+    sp3.xy = var_bg_uv + vec2(sOffsetXpos, sOffsetYpos);
     
     vec2 delta = vec2(dx, dy);
-    sp[0].zw = var_bg_uv + vec2(-delta.x, -delta.y);
-    sp[1].zw = var_bg_uv + vec2(delta.x, -delta.y);
-    sp[2].zw = var_bg_uv + vec2(-delta.x, delta.y);
-    sp[3].zw = var_bg_uv + vec2(delta.x, delta.y);
+    sp0.zw = var_bg_uv + vec2(-delta.x, -delta.y);
+    sp1.zw = var_bg_uv + vec2(delta.x, -delta.y);
+    sp2.zw = var_bg_uv + vec2(-delta.x, delta.y);
+    sp3.zw = var_bg_uv + vec2(delta.x, delta.y);
 #ifdef BNB_VK_1
 var_bg_uv.y = 1. - var_bg_uv.y;
 #endif
 
 #ifdef BNB_VK_1
-    sp[0].y = 1. - sp[0].y;
-    sp[1].y = 1. - sp[1].y;
-    sp[2].y = 1. - sp[2].y;
-    sp[3].y = 1. - sp[3].y;
-    sp[0].w = 1. - sp[0].w;
-    sp[1].w = 1. - sp[1].w;
-    sp[2].w = 1. - sp[2].w;
-    sp[3].w = 1. - sp[3].w;
+    sp0.y = 1. - sp0.y;
+    sp1.y = 1. - sp1.y;
+    sp2.y = 1. - sp2.y;
+    sp3.y = 1. - sp3.y;
+    sp0.w = 1. - sp0.w;
+    sp1.w = 1. - sp1.w;
+    sp2.w = 1. - sp2.w;
+    sp3.w = 1. - sp3.w;
 #endif
 }

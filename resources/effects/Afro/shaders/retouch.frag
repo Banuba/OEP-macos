@@ -22,7 +22,11 @@
 
 BNB_IN(0) vec2 var_uv;
 BNB_IN(1) vec2 var_bg_uv;
-BNB_IN(2) mat4 sp;
+BNB_IN(2+0) vec4 sp0;
+BNB_IN(2+1) vec4 sp1;
+BNB_IN(2+2) vec4 sp2;
+BNB_IN(2+3) vec4 sp3;
+
 
 
 
@@ -67,7 +71,7 @@ vec4 whitening(vec4 originalColor, float factor, BNB_DECLARE_SAMPLER_2D_ARGUMENT
 }
 
 vec4 sharpen(vec4 originalColor, float factor) {
-    vec4 total = 5.0 * originalColor - BNB_TEXTURE_2D(BNB_SAMPLER_2D(glfx_BACKGROUND), sp[0].zw) - BNB_TEXTURE_2D(BNB_SAMPLER_2D(glfx_BACKGROUND), sp[1].zw) - BNB_TEXTURE_2D(BNB_SAMPLER_2D(glfx_BACKGROUND), sp[2].zw) - BNB_TEXTURE_2D(BNB_SAMPLER_2D(glfx_BACKGROUND), sp[3].zw);
+    vec4 total = 5.0 * originalColor - BNB_TEXTURE_2D(BNB_SAMPLER_2D(glfx_BACKGROUND), sp0.zw) - BNB_TEXTURE_2D(BNB_SAMPLER_2D(glfx_BACKGROUND), sp1.zw) - BNB_TEXTURE_2D(BNB_SAMPLER_2D(glfx_BACKGROUND), sp2.zw) - BNB_TEXTURE_2D(BNB_SAMPLER_2D(glfx_BACKGROUND), sp3.zw);
     vec4 result = mix(originalColor, total, factor);
     return clamp(result, 0.0, 1.0);;
 }
@@ -93,10 +97,10 @@ vec4 softSkin(vec4 originalColor, float factor) {
     float summ = 1.0;
     
     mat4 nextColor;
-    nextColor[0] = BNB_TEXTURE_2D(BNB_SAMPLER_2D(glfx_BACKGROUND), sp[0].xy);
-    nextColor[1] = BNB_TEXTURE_2D(BNB_SAMPLER_2D(glfx_BACKGROUND), sp[1].xy);
-    nextColor[2] = BNB_TEXTURE_2D(BNB_SAMPLER_2D(glfx_BACKGROUND), sp[2].xy);
-    nextColor[3] = BNB_TEXTURE_2D(BNB_SAMPLER_2D(glfx_BACKGROUND), sp[3].xy);
+    nextColor[0] = BNB_TEXTURE_2D(BNB_SAMPLER_2D(glfx_BACKGROUND), sp0.xy);
+    nextColor[1] = BNB_TEXTURE_2D(BNB_SAMPLER_2D(glfx_BACKGROUND), sp1.xy);
+    nextColor[2] = BNB_TEXTURE_2D(BNB_SAMPLER_2D(glfx_BACKGROUND), sp2.xy);
+    nextColor[3] = BNB_TEXTURE_2D(BNB_SAMPLER_2D(glfx_BACKGROUND), sp3.xy);
     vec4 nextIntensity = getLuminance4(nextColor);
     vec4 curr = 0.367 * getWeight(intensity, nextIntensity);
     summ += dot(curr, vec4(1.0));
@@ -151,5 +155,5 @@ void main()
 
     vec4 makeup2 = BNB_TEXTURE_2D(BNB_SAMPLER_2D(tex_makeup2), uvh );
     res.xyz = mix( res.xyz, makeup2.xyz, makeup2.w );
-    bnb_FragColor = res;
+    bnb_FragColor = vec4(res.xyz, 1.);
 }
