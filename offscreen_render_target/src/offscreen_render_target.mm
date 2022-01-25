@@ -3,7 +3,6 @@
 #include "utils.h"
 
 #include <bnb/effect_player/utility.hpp>
-#include <bnb/postprocess/interfaces/postprocess_helper.hpp>
 #include <oep_framework/oep/BNBOffscreenEffectPlayer.h>
 
 #include "BNBCopyableMetalLayer.h"
