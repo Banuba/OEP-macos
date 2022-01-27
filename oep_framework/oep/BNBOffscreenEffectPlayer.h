@@ -21,12 +21,8 @@ typedef void (^BNBOEPImageReadyBlock)(_Nullable CVPixelBufferRef pixelBuffer);
                        height:(NSUInteger)height
                   manualAudio:(BOOL)manual
                         token:(NSString*)token
-                resourcePaths:(nonnull NSArray<NSString *> *)resourcePaths;
-
-// /**
-//  * Async processImage method
-//  */
-- (void)processImage:(CVPixelBufferRef)pixelBuffer completion:(BNBOEPImageReadyBlock _Nonnull)completion;
+                resourcePaths:(nonnull NSArray<NSString *> *)resourcePaths
+                   completion:(BNBOEPImageReadyBlock _Nonnull)screen_completion;
 
 // /**
 //  * Load effect with specified name (used folder name)
