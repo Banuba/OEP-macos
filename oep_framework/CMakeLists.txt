@@ -15,7 +15,10 @@ add_library(${FRAMEWORK_NAME} STATIC
 )
 
 target_link_libraries(${FRAMEWORK_NAME}
-    offscreen_ep
+    bnb_oep_pixel_buffer_target
+    bnb_oep_image_processing_result_target
+    bnb_oep_offscreen_effect_player_target
+    bnb_oep_camera_target
     offscreen_rt
 )
 

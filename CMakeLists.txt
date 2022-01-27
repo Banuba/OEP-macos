@@ -17,7 +17,7 @@ include(${CMAKE_CURRENT_LIST_DIR}/cmake/utils.cmake)
 
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/bnb_sdk)
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/libraries)
-add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/offscreen_effect_player)
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/OEP-module)
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/offscreen_render_target)
 
 option(DEPLOY_BUILD "Build for deployment" OFF)
