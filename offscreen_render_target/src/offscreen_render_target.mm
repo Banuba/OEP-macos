@@ -1,9 +1,8 @@
-#include "offscreen_render_target.h"
+ #include "offscreen_render_target.h"
 
 #include "utils.h"
 
 #include <bnb/effect_player/utility.hpp>
-#include <oep_framework/oep/BNBOffscreenEffectPlayer.h>
 
 #include "BNBCopyableMetalLayer.h"
 
@@ -202,10 +201,10 @@ namespace bnb
     //MARK: impl -- Start
     struct offscreen_render_target::impl{
     public:
-        explicit impl(size_t width, size_t height);
-        ~impl();
+        explicit impl();
+        ~impl() = default;
+        
         void cleanup_render_buffers();
-        void surface_changed(int32_t width, int32_t height);
         void setup_offscreen_pixel_buffer(EPOrientation orientation);
         std::tuple<int, int> getWidthHeight(EPOrientation orientation);
         void setup_offscreen_render_target(EPOrientation orientation);
@@ -215,12 +214,9 @@ namespace bnb
         void draw(EPOrientation orientation);
         CVPixelBufferRef get_oriented_image(EPOrientation orientation);
         
-        void init();
-        void activate_context();
-        void prepare_rendering();
-        void orient_image(interfaces::orient_format orient);
-        void* get_image();
-        bnb::data_t read_current_buffer();
+        void init(int32_t width, int32_t height);
+        void deinit();
+        void surface_changed(int32_t width, int32_t height);
         void* get_layer();
         
     private:
@@ -241,15 +237,7 @@ namespace bnb
         id<MTLTexture> m_offscreenRenderMetalTexture;
     };
 
-    offscreen_render_target::impl::impl(size_t width, size_t height): m_width(width), m_height(height){
-        activate_metal();
-    }
-   
-    offscreen_render_target::impl::~impl()
-    {
-        [[MetalHelper shared] releaseResources];
-        cleanup_render_buffers();
-    }
+    offscreen_render_target::impl::impl(){}
    
     void offscreen_render_target::impl::cleanup_render_buffers()
     {
@@ -261,14 +249,6 @@ namespace bnb
             CFRelease(m_offscreenRenderTexture);
             m_offscreenRenderTexture = nullptr;
         }
-    }
-   
-    void offscreen_render_target::impl::surface_changed(int32_t width, int32_t height)
-    {
-        cleanup_render_buffers();
-   
-        m_width = width;
-        m_height = height;
     }
    
     void offscreen_render_target::impl::setup_offscreen_pixel_buffer(EPOrientation orientation)
@@ -402,49 +382,37 @@ namespace bnb
          CVPixelBufferRetain(m_offscreenRenderPixelBuffer);
          return m_offscreenRenderPixelBuffer;
      }
-    
-    void offscreen_render_target::impl::init() {}
-    void offscreen_render_target::impl::activate_context() {}
-    void offscreen_render_target::impl::prepare_rendering() {}
-    void offscreen_render_target::impl::orient_image(interfaces::orient_format orient) {}
-    
-    void* offscreen_render_target::impl::get_image(){
-        return get_oriented_image(EPOrientationAngles180);
+
+    void offscreen_render_target::impl::init(int32_t width, int32_t height) {
+        m_width = width;
+        m_height = height;
+        activate_metal();
     }
 
-    bnb::data_t offscreen_render_target::impl::read_current_buffer() {
-         size_t size = m_width * m_height * 4;
-         data_t data = data_t{ std::make_unique<uint8_t[]>(size), size };
-    
-         MTLRegion region = {{ 0, 0, 0 },             // MTLOrigin
-                             {m_width, m_height, 1}}; // MTLSize
-    
-         [m_offscreenRenderMetalTexture getBytes: data.data.get()
-                                             bytesPerRow: m_width * 4
-                                              fromRegion: region
-                                             mipmapLevel: 0];
-         return data;
+    void offscreen_render_target::impl::deinit(){
+        [[MetalHelper shared] releaseResources];
+        cleanup_render_buffers();
     }
 
+    void offscreen_render_target::impl::surface_changed(int32_t width, int32_t height)
+    {
+        cleanup_render_buffers();
+        m_width = width;
+        m_height = height;
+    }
+    
     void* offscreen_render_target::impl::get_layer(){
         return (void*)CFBridgingRetain(effectPlayerLayer);
     }
 //MARK: impl -- Finish
 
 //MARK: offscreen_render_target -- Start
-    offscreen_render_target::offscreen_render_target(size_t width, size_t height)
-        : m_impl(std::make_unique<impl>(width, height))
-    {
-        activate_metal();
-    }
+    offscreen_render_target::offscreen_render_target() {}
 
     offscreen_render_target::~offscreen_render_target() = default;
 
     void offscreen_render_target::cleanup_render_buffers(){
         m_impl->cleanup_render_buffers();
-    }
-    void offscreen_render_target::surface_changed(int32_t width, int32_t height){
-        m_impl->surface_changed(width, height);
     }
 
     void offscreen_render_target::setup_offscreen_pixel_buffer(EPOrientation orientation){
@@ -479,28 +447,30 @@ namespace bnb
         return m_impl->get_oriented_image(orientation);
     }
 
-    void offscreen_render_target::init(){
-        m_impl->init();
+
+    void offscreen_render_target::init(int32_t width, int32_t height){
+        m_impl = std::make_unique<impl>();
+        m_impl->init(width, height);
     }
 
-    void offscreen_render_target::activate_context(){
-        m_impl->activate_context();
+    void offscreen_render_target::deinit() {
+        m_impl->deinit();
     }
 
-    void offscreen_render_target::prepare_rendering(){
-        m_impl->prepare_rendering();
+    void offscreen_render_target::surface_changed(int32_t width, int32_t height){
+        m_impl->surface_changed(width, height);
     }
 
-    void offscreen_render_target::orient_image(interfaces::orient_format orient){
-        m_impl->orient_image(orient);
-    }
+    void offscreen_render_target::activate_context()    {}
+    void offscreen_render_target::deactivate_context()  {}
+    void offscreen_render_target::prepare_rendering()   {}
+    
+    void offscreen_render_target::orient_image(bnb::oep::interfaces::rotation orient){}
 
-    void* offscreen_render_target::get_image(){
-        return m_impl->get_image();
-    }
+    pixel_buffer_sptr offscreen_render_target::read_current_buffer(bnb::oep::interfaces::image_format format){return nil;}
 
-    bnb::data_t offscreen_render_target::read_current_buffer(){
-        return m_impl->read_current_buffer();
+    rendered_texture_t offscreen_render_target::get_current_buffer_texture(){
+        return m_impl->get_oriented_image(EPOrientation::EPOrientationAngles180);
     }
 
     void* offscreen_render_target::get_layer(){

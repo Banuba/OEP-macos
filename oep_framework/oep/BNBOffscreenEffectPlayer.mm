@@ -42,7 +42,7 @@
     }
     
     m_ep = bnb::oep::interfaces::effect_player::create(paths, std::string([token UTF8String]));
-    m_ort = std::make_shared<bnb::offscreen_render_target>(width, height);
+    m_ort = std::make_shared<bnb::offscreen_render_target>();
     m_oep = bnb::oep::interfaces::offscreen_effect_player::create(m_ep, m_ort, width, height);
     
     auto push_frame_cb = [self, screen_completion](pixel_buffer_sptr pixel_buffer){

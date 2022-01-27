@@ -1,8 +1,10 @@
 #pragma once
 
-//#include <bnb/types/base_types.hpp>
+#include <bnb/types/base_types.hpp>
 
-#include <interfaces/offscreen_render_target.hpp>
+//#include <interfaces/offscreen_render_target.hpp>
+#include <OEP-module/interfaces/offscreen_render_target.hpp>
+
 #import <CoreMedia/CoreMedia.h>
 
 namespace bnb
@@ -17,9 +19,9 @@ namespace bnb
     class offscreen_render_target : public bnb::oep::interfaces::offscreen_render_target
     {
     public:
-        offscreen_render_target(size_t width, size_t height);
-
+        offscreen_render_target();
         ~offscreen_render_target();
+        
         void cleanup_render_buffers();
         void setup_offscreen_pixel_buffer(EPOrientation orientation);
         std::tuple<int, int> getWidthHeight(EPOrientation orientation);
@@ -39,10 +41,7 @@ namespace bnb
         void orient_image(bnb::oep::interfaces::rotation orient) override;
         pixel_buffer_sptr read_current_buffer(bnb::oep::interfaces::image_format format) override;
         rendered_texture_t get_current_buffer_texture() override;
-        
-//        void* get_image() override;
-//        bnb::data_t read_current_buffer() override;
-//        void* get_layer() override;
+        void* get_layer() override;
         
     private:
         struct impl;
