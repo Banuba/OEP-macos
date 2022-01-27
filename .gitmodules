@@ -1,3 +1,4 @@
 [submodule "OEP-module"]
 	path = OEP-module
-	url = https://github.com/Banuba/OEP-module
+	url = git@github.com:Banuba/OEP-module.git
+	branch = macos-support
