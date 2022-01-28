@@ -30,8 +30,7 @@
                        height:(NSUInteger)height
                   manualAudio:(BOOL)manual
                         token:(NSString*)token
-                resourcePaths:(NSArray<NSString *> *)resourcePaths
-                   completion:(BNBOEPImageReadyBlock _Nonnull)screen_completion;
+                resourcePaths:(NSArray<NSString *> *)resourcePaths;
 {
     _width = width;
     _height = height;
@@ -44,30 +43,71 @@
     m_ep = bnb::oep::interfaces::effect_player::create(paths, std::string([token UTF8String]));
     m_ort = std::make_shared<bnb::offscreen_render_target>();
     m_oep = bnb::oep::interfaces::offscreen_effect_player::create(m_ep, m_ort, width, height);
-    
-    auto push_frame_cb = [self, screen_completion](pixel_buffer_sptr pixel_buffer){
-        auto get_pixel_buffer_callback = [pixel_buffer, screen_completion](image_processing_result_sptr result) {
-            if (result != nullptr) {
-                auto render_callback = [screen_completion](std::optional<rendered_texture_t> texture_id) {
-                    if (texture_id.has_value()) {
-                        CVPixelBufferRef retBuffer = (CVPixelBufferRef)texture_id.value();
 
-                        if (screen_completion) {
-                            screen_completion(retBuffer);
-                        }
+    return self;
+}
 
-                        CVPixelBufferRelease(retBuffer);
+- (void)processImage:(CVPixelBufferRef)pixelBuffer completion:(BNBOEPImageReadyBlock _Nonnull)completion
+{
+    pixel_buffer_sptr pixelBuffer_sprt([self convertImage:pixelBuffer]);
+    auto get_pixel_buffer_callback = [pixelBuffer, completion](image_processing_result_sptr result) {
+        if (result != nullptr) {
+            auto render_callback = [completion](std::optional<rendered_texture_t> texture_id) {
+                if (texture_id.has_value()) {
+                    CVPixelBufferRef retBuffer = (CVPixelBufferRef)texture_id.value();
+
+                    if (completion) {
+                        completion(retBuffer);
                     }
-                };
-                result->get_texture(render_callback);
-            }
-        };
-        
-        m_oep->process_image_async(pixel_buffer, bnb::oep::interfaces::rotation::deg0, get_pixel_buffer_callback, bnb::oep::interfaces::rotation::deg180);
+
+                    CVPixelBufferRelease(retBuffer);
+                }
+            };
+            result->get_texture(render_callback);
+        }
     };
     
-    m_camera = bnb::oep::interfaces::camera::create(push_frame_cb, 0);
-    return self;
+    m_oep->process_image_async(pixelBuffer_sprt, bnb::oep::interfaces::rotation::deg0, get_pixel_buffer_callback, bnb::oep::interfaces::rotation::deg180);
+}
+
+- (pixel_buffer_sptr)convertImage:(CVPixelBufferRef)pixelBuffer
+{
+    OSType pixelFormat = CVPixelBufferGetPixelFormatType(pixelBuffer);
+    pixel_buffer_sptr img;
+
+    switch (pixelFormat) {
+        case kCVPixelFormatType_420YpCbCr8BiPlanarFullRange: {
+            CVPixelBufferLockBaseAddress(pixelBuffer, kCVPixelBufferLock_ReadOnly);
+            uint8_t* lumo = static_cast<uint8_t*>(CVPixelBufferGetBaseAddressOfPlane(pixelBuffer, 0));
+            uint8_t* chromo = static_cast<uint8_t*>(CVPixelBufferGetBaseAddressOfPlane(pixelBuffer, 1));
+            int bufferWidth = CVPixelBufferGetWidth(pixelBuffer);
+            int bufferHeight = CVPixelBufferGetHeight(pixelBuffer);
+
+            // Retain twice. Each plane will release once.
+            CVPixelBufferRetain(pixelBuffer);
+            CVPixelBufferRetain(pixelBuffer);
+
+            using ns = bnb::oep::interfaces::pixel_buffer;
+            ns::plane_data y_plane{std::shared_ptr<uint8_t>(lumo, [pixelBuffer](uint8_t*) {
+                                       CVPixelBufferRelease(pixelBuffer);
+                                   }),
+                                   0,
+                                   static_cast<int32_t>(CVPixelBufferGetBytesPerRowOfPlane(pixelBuffer, 0))};
+            ns::plane_data uv_plane{std::shared_ptr<uint8_t>(chromo, [pixelBuffer](uint8_t*) {
+                                        CVPixelBufferUnlockBaseAddress(pixelBuffer, kCVPixelBufferLock_ReadOnly);
+                                        CVPixelBufferRelease(pixelBuffer);
+                                    }),
+                                    0,
+                                    static_cast<int32_t>(CVPixelBufferGetBytesPerRowOfPlane(pixelBuffer, 0))};
+
+            std::vector<ns::plane_data> planes{y_plane, uv_plane};
+            img = ns::create(planes, bnb::oep::interfaces::image_format::nv12_bt709_full, bufferWidth, bufferHeight);
+        } break;
+        default:
+            NSLog(@"ERROR TYPE : %d", pixelFormat);
+            return nil;
+    }
+        return std::move(img);
 }
 
 - (void)loadEffect:(NSString* _Nonnull)effectName
