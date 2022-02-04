@@ -7,10 +7,13 @@
 
 namespace bnb::oep
 {
-
     /* effect_player::create */
     effect_player_sptr interfaces::effect_player::create(const std::vector<std::string>& path_to_resources, const std::string& client_token)
     {
+        return std::make_shared<bnb::oep::effect_player>(path_to_resources, client_token);
+    }
+
+    macos_effect_player_sptr effect_player::create(const std::vector<std::string>& path_to_resources, const std::string& client_token){
         return std::make_shared<bnb::oep::effect_player>(path_to_resources, client_token);
     }
 

@@ -5,18 +5,13 @@
 #include "effect_player.hpp"
 #include "offscreen_render_target.h"
 
-#include <interfaces/camera.hpp>
-
-
 @implementation BNBOffscreenEffectPlayer
 {
     NSUInteger _width;
     NSUInteger _height;
-
-    effect_player_sptr m_ep;
-    offscreen_render_target_sptr m_ort;
+    macos_effect_player_sptr m_ep;
+    std::shared_ptr<bnb::offscreen_render_target> m_ort;
     offscreen_effect_player_sptr m_oep;
-    camera_sptr m_camera;
 }
 
 - (id)init
@@ -40,10 +35,11 @@
         paths.push_back(std::string([(NSString*)object UTF8String]));
     }
     
-    m_ep = bnb::oep::interfaces::effect_player::create(paths, std::string([token UTF8String]));
+    m_ep = bnb::oep::effect_player::create(paths, std::string([token UTF8String]));
     m_ort = std::make_shared<bnb::offscreen_render_target>();
     m_oep = bnb::oep::interfaces::offscreen_effect_player::create(m_ep, m_ort, width, height);
 
+    m_ep->set_render_surface(m_ort->get_layer());
     return self;
 }
 

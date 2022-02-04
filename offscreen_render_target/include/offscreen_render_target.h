@@ -40,7 +40,7 @@ namespace bnb
         void orient_image(bnb::oep::interfaces::rotation orient) override;
         pixel_buffer_sptr read_current_buffer(bnb::oep::interfaces::image_format format) override;
         rendered_texture_t get_current_buffer_texture() override;
-        void* get_layer() override;
+        void* get_layer();
         
     private:
         struct impl;
