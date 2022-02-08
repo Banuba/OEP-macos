@@ -4,7 +4,7 @@
 #include <bnb/effect_player/interfaces/all.hpp>
 #include <bnb/effect_player/utility.hpp>
 
-#include "m_interfaces/effect_player.hpp"
+#include "interfaces/effect_player_metal_extension.hpp"
 
 namespace bnb::oep
 {
@@ -16,7 +16,7 @@ using macos_effect_player_sptr = std::shared_ptr<bnb::oep::effect_player>;
 namespace bnb::oep
 {
 
-    class effect_player : public bnb::oep::interfaces::effect_player, public bnb::oep::metal_support::effect_player
+    class effect_player : public bnb::oep::interfaces::effect_player, public bnb::oep::interfaces::effect_player_metal_extension
     {
     public:
         effect_player(const std::vector<std::string>& path_to_resources, const std::string& client_token);

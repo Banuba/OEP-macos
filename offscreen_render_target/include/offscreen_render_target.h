@@ -4,7 +4,7 @@
 
 #include <interfaces/offscreen_render_target.hpp>
 
-#include "m_interfaces/offscreen_render_target.hpp"
+#include "interfaces/offscreen_render_target_metal_extension.hpp"
 
 #import <CoreMedia/CoreMedia.h>
 
@@ -17,7 +17,7 @@ namespace bnb
         EPOrientationAngles270
     };
 
-    class offscreen_render_target : public bnb::oep::interfaces::offscreen_render_target, public bnb::oep::metal_support::offscreen_render_target
+    class offscreen_render_target : public bnb::oep::interfaces::offscreen_render_target, public bnb::oep::interfaces::offscreen_render_target_metal_extension
     {
     public:
         offscreen_render_target();

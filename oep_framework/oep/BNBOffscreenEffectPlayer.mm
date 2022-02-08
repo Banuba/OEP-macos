@@ -10,8 +10,9 @@
 {
     NSUInteger _width;
     NSUInteger _height;
-    macos_effect_player_sptr m_ep;
-    std::shared_ptr<bnb::offscreen_render_target> m_ort;
+
+    effect_player_sptr m_ep;
+    offscreen_render_target_sptr m_ort;
     offscreen_effect_player_sptr m_oep;
 }
 
@@ -39,6 +40,10 @@
     m_ep = bnb::oep::effect_player::create(paths, std::string([token UTF8String]));
     m_ort = std::make_shared<bnb::offscreen_render_target>();
     m_oep = bnb::oep::interfaces::offscreen_effect_player::create(m_ep, m_ort, width, height);
+    
+    auto me_ort = std::dynamic_pointer_cast<bnb::oep::interfaces::offscreen_render_target_metal_extension>(m_ort);
+    auto me_ep = std::dynamic_pointer_cast<bnb::oep::interfaces::effect_player_metal_extension>(m_ep);
+    me_ep->set_render_surface(me_ort->get_layer());
     return self;
 }
 

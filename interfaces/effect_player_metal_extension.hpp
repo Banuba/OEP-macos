@@ -2,13 +2,13 @@
 
 #include <vector>
 
-namespace bnb::oep::metal_support
+namespace bnb::oep::interfaces
 {
 
-    class effect_player
+    class effect_player_metal_extension
     {
     public:
-        virtual ~effect_player() = default;
+        virtual ~effect_player_metal_extension() = default;
         
         /**
          * Needed for METAL only
@@ -21,4 +21,4 @@ namespace bnb::oep::metal_support
         virtual void set_render_surface(void* layer) = 0;
     };
 
-} /* namespace bnb::oep::metal_support */
+} /* namespace bnb::oep::interfaces */

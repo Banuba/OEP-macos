@@ -1,12 +1,12 @@
 #pragma once
 
-namespace bnb::oep::metal_support
+namespace bnb::oep::interfaces
 {
 
-    class offscreen_render_target
+    class offscreen_render_target_metal_extension
     {
     public:
-        virtual ~offscreen_render_target() = default;
+        virtual ~offscreen_render_target_metal_extension() = default;
 
         /**
          * Needed for METAL only
@@ -20,4 +20,4 @@ namespace bnb::oep::metal_support
         virtual void* get_layer() = 0;
     };
 
-} /* namespace bnb::oep::metal_support */
+} /* namespace bnb::oep::interfaces */
