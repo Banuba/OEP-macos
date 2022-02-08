@@ -4,6 +4,8 @@
 
 #include <interfaces/offscreen_render_target.hpp>
 
+#include "m_interfaces/offscreen_render_target.hpp"
+
 #import <CoreMedia/CoreMedia.h>
 
 namespace bnb
@@ -15,7 +17,7 @@ namespace bnb
         EPOrientationAngles270
     };
 
-    class offscreen_render_target : public bnb::oep::interfaces::offscreen_render_target
+    class offscreen_render_target : public bnb::oep::interfaces::offscreen_render_target, public bnb::oep::metal_support::offscreen_render_target
     {
     public:
         offscreen_render_target();
@@ -40,7 +42,7 @@ namespace bnb
         void orient_image(bnb::oep::interfaces::rotation orient) override;
         pixel_buffer_sptr read_current_buffer(bnb::oep::interfaces::image_format format) override;
         rendered_texture_t get_current_buffer_texture() override;
-        void* get_layer();
+        void* get_layer() override;
         
     private:
         struct impl;

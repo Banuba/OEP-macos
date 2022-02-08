@@ -1,6 +1,7 @@
 #import "BNBOffscreenEffectPlayer.h"
 
 #import <Accelerate/Accelerate.h>
+#include <interfaces/offscreen_effect_player.hpp>
 
 #include "effect_player.hpp"
 #include "offscreen_render_target.h"
@@ -38,8 +39,6 @@
     m_ep = bnb::oep::effect_player::create(paths, std::string([token UTF8String]));
     m_ort = std::make_shared<bnb::offscreen_render_target>();
     m_oep = bnb::oep::interfaces::offscreen_effect_player::create(m_ep, m_ort, width, height);
-
-    m_ep->set_render_surface(m_ort->get_layer());
     return self;
 }
 

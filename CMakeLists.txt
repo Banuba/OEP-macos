@@ -13,6 +13,8 @@ set(BNB_THIRD_FOLDER ${CMAKE_CURRENT_LIST_DIR}/third)
 # Set to OFF to disable ffmpeg dependency (SDK should be built with disabled video_player also)
 set(BNB_VIDEO_PLAYER ON)
 
+add_compile_definitions(USE_METAL)
+
 include(${CMAKE_CURRENT_LIST_DIR}/cmake/utils.cmake)
 
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/bnb_sdk)

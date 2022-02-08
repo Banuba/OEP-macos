@@ -4,7 +4,7 @@
 #include <bnb/effect_player/interfaces/all.hpp>
 #include <bnb/effect_player/utility.hpp>
 
-#include "interfaces/offscreen_effect_player.hpp"
+#include "m_interfaces/effect_player.hpp"
 
 namespace bnb::oep
 {
@@ -16,7 +16,7 @@ using macos_effect_player_sptr = std::shared_ptr<bnb::oep::effect_player>;
 namespace bnb::oep
 {
 
-    class effect_player : public bnb::oep::interfaces::effect_player
+    class effect_player : public bnb::oep::interfaces::effect_player, public bnb::oep::metal_support::effect_player
     {
     public:
         effect_player(const std::vector<std::string>& path_to_resources, const std::string& client_token);
@@ -43,7 +43,7 @@ namespace bnb::oep
 
         void draw() override;
         
-        void set_render_surface(void* layer);
+        void set_render_surface(void* layer) override;
 
     private:
         bnb::image_format make_bnb_image_format(pixel_buffer_sptr image, interfaces::rotation orientation);
