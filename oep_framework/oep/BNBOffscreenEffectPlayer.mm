@@ -42,7 +42,13 @@
     m_oep = bnb::oep::interfaces::offscreen_effect_player::create(m_ep, m_ort, width, height);
     
     auto me_ort = std::dynamic_pointer_cast<bnb::oep::interfaces::offscreen_render_target_metal_extension>(m_ort);
+    if (me_ort == nullptr){
+        throw std::runtime_error("Offscreen render target must contain METAL-specific interface!\n");
+    }
     auto me_ep = std::dynamic_pointer_cast<bnb::oep::interfaces::effect_player_metal_extension>(m_ep);
+    if (me_ep == nullptr){
+        throw std::runtime_error("Effect player must contain METAL-specific interface!\n");
+    }
     me_ep->set_render_surface(me_ort->get_layer());
     return self;
 }
