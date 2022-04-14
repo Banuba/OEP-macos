@@ -205,14 +205,15 @@ namespace bnb
         ~impl() = default;
         
         void cleanup_render_buffers();
-        void setup_offscreen_pixel_buffer(EPOrientation orientation);
-        std::tuple<int, int> getWidthHeight(EPOrientation orientation);
-        void setup_offscreen_render_target(EPOrientation orientation);
+        void setup_offscreen_pixel_buffer(bnb::oep::interfaces::rotation orientation);
+        std::tuple<int, int> getWidthHeight(bnb::oep::interfaces::rotation orientation);
+        void setup_offscreen_render_target(bnb::oep::interfaces::rotation orientation);
         void activate_metal();
         void flush_metal();
-        bnb::camera_orientation get_camera_orientation(EPOrientation orientation);
-        void draw(EPOrientation orientation);
-        CVPixelBufferRef get_oriented_image(EPOrientation orientation);
+        bnb::camera_orientation get_camera_orientation(bnb::oep::interfaces::rotation orientation);
+        void draw(bnb::oep::interfaces::rotation orientation);
+        CVPixelBufferRef get_current_buffer_texture();
+        void orient_image(bnb::oep::interfaces::rotation orientation);
         
         void init(int32_t width, int32_t height);
         void deinit();
@@ -251,7 +252,7 @@ namespace bnb
         }
     }
    
-    void offscreen_render_target::impl::setup_offscreen_pixel_buffer(EPOrientation orientation)
+    void offscreen_render_target::impl::setup_offscreen_pixel_buffer(bnb::oep::interfaces::rotation orientation)
     {
         auto [width, height] = getWidthHeight(orientation);
         NSDictionary* attrs = @{
@@ -271,14 +272,14 @@ namespace bnb
         }
     }
    
-    std::tuple<int, int> offscreen_render_target::impl::getWidthHeight(EPOrientation orientation)
+    std::tuple<int, int> offscreen_render_target::impl::getWidthHeight(bnb::oep::interfaces::rotation orientation)
      {
-         auto width = orientation == EPOrientation::EPOrientationAngles90 || orientation ==    EPOrientation::EPOrientationAngles270 ? m_height : m_width;
-         auto height = orientation == EPOrientation::EPOrientationAngles90 || orientation ==    EPOrientation::EPOrientationAngles270 ? m_width : m_height;
+         auto width = orientation == bnb::oep::interfaces::rotation::deg90 || orientation ==    bnb::oep::interfaces::rotation::deg270 ? m_height : m_width;
+         auto height = orientation == bnb::oep::interfaces::rotation::deg90 || orientation ==    bnb::oep::interfaces::rotation::deg270 ? m_width : m_height;
          return {m_width, m_height};
      }
    
-    void offscreen_render_target::impl::setup_offscreen_render_target(EPOrientation orientation)
+    void offscreen_render_target::impl::setup_offscreen_render_target(bnb::oep::interfaces::rotation orientation)
     {
          auto [width, height] = getWidthHeight(orientation);
          CVReturn err = CVMetalTextureCacheCreateTextureFromImage(
@@ -316,21 +317,21 @@ namespace bnb
         [[MetalHelper shared] flush];
     }
    
-    bnb::camera_orientation offscreen_render_target::impl::get_camera_orientation(EPOrientation orientation)
+    bnb::camera_orientation offscreen_render_target::impl::get_camera_orientation(bnb::oep::interfaces::rotation orientation)
     {
         switch (orientation) {
-            case EPOrientation::EPOrientationAngles180:
+            case bnb::oep::interfaces::rotation::deg180:
                 return bnb::camera_orientation::deg_180;
-            case EPOrientation::EPOrientationAngles90:
+            case bnb::oep::interfaces::rotation::deg90:
                 return bnb::camera_orientation::deg_90;
-            case EPOrientation::EPOrientationAngles270:
+            case bnb::oep::interfaces::rotation::deg270:
                 return bnb::camera_orientation::deg_270;
             default:
                 return bnb::camera_orientation::deg_0;
         }
     }
    
-    void offscreen_render_target::impl::draw(EPOrientation orientation)
+    void offscreen_render_target::impl::draw(bnb::oep::interfaces::rotation orientation)
     {
         id<MTLTexture> layerTexture = effectPlayerLayer.lastDrawable.texture;
    
@@ -363,25 +364,29 @@ namespace bnb
         }
     }
 
-     CVPixelBufferRef offscreen_render_target::impl::get_oriented_image(EPOrientation orientation)
-     {
-         if (m_prev_orientation != static_cast<int>(orientation)) {
-             if (m_offscreenRenderPixelBuffer != nullptr) {
-                 cleanup_render_buffers();
-             }
-             m_prev_orientation = static_cast<int>(orientation);
-         }
-    
-         if (m_offscreenRenderPixelBuffer == nullptr) {
-             setup_offscreen_pixel_buffer(orientation);
-             setup_offscreen_render_target(orientation);
-         }
-    
-         draw(orientation);
-         flush_metal();
-         CVPixelBufferRetain(m_offscreenRenderPixelBuffer);
-         return m_offscreenRenderPixelBuffer;
-     }
+
+
+    CVPixelBufferRef offscreen_render_target::impl::get_current_buffer_texture(){
+        CVPixelBufferRetain(m_offscreenRenderPixelBuffer);
+        return m_offscreenRenderPixelBuffer;
+    }
+
+    void offscreen_render_target::impl::orient_image(bnb::oep::interfaces::rotation orientation){
+        if (m_prev_orientation != static_cast<int>(orientation)) {
+            if (m_offscreenRenderPixelBuffer != nullptr) {
+                cleanup_render_buffers();
+            }
+            m_prev_orientation = static_cast<int>(orientation);
+        }
+
+        if (m_offscreenRenderPixelBuffer == nullptr) {
+            setup_offscreen_pixel_buffer(orientation);
+            setup_offscreen_render_target(orientation);
+        }
+
+        draw(orientation);
+        flush_metal();
+    }
 
     void offscreen_render_target::impl::init(int32_t width, int32_t height) {
         m_width = width;
@@ -415,15 +420,15 @@ namespace bnb
         m_impl->cleanup_render_buffers();
     }
 
-    void offscreen_render_target::setup_offscreen_pixel_buffer(EPOrientation orientation){
+    void offscreen_render_target::setup_offscreen_pixel_buffer(bnb::oep::interfaces::rotation orientation){
         m_impl->setup_offscreen_pixel_buffer(orientation);
     }
 
-    std::tuple<int, int> offscreen_render_target::getWidthHeight(EPOrientation orientation){
+    std::tuple<int, int> offscreen_render_target::getWidthHeight(bnb::oep::interfaces::rotation orientation){
         return m_impl->getWidthHeight(orientation);
     }
 
-    void offscreen_render_target::setup_offscreen_render_target(EPOrientation orientation){
+    void offscreen_render_target::setup_offscreen_render_target(bnb::oep::interfaces::rotation orientation){
         m_impl->setup_offscreen_render_target(orientation);
     }
 
@@ -435,18 +440,13 @@ namespace bnb
         m_impl->flush_metal();
     }
 
-    bnb::camera_orientation offscreen_render_target::get_camera_orientation(EPOrientation orientation){
+    bnb::camera_orientation offscreen_render_target::get_camera_orientation(bnb::oep::interfaces::rotation orientation){
         return m_impl->get_camera_orientation(orientation);
     }
 
-    void offscreen_render_target::draw(EPOrientation orientation){
+    void offscreen_render_target::draw(bnb::oep::interfaces::rotation orientation){
         m_impl->draw(orientation);
     }
-
-    CVPixelBufferRef offscreen_render_target::get_oriented_image(EPOrientation orientation){
-        return m_impl->get_oriented_image(orientation);
-    }
-
 
     void offscreen_render_target::init(int32_t width, int32_t height){
         m_impl = std::make_unique<impl>();
@@ -465,12 +465,14 @@ namespace bnb
     void offscreen_render_target::deactivate_context()  {}
     void offscreen_render_target::prepare_rendering()   {}
     
-    void offscreen_render_target::orient_image(bnb::oep::interfaces::rotation orient){}
+    void offscreen_render_target::orient_image(bnb::oep::interfaces::rotation orient){
+        m_impl->orient_image(orient);
+    }
 
     pixel_buffer_sptr offscreen_render_target::read_current_buffer(bnb::oep::interfaces::image_format format){return nil;}
 
     rendered_texture_t offscreen_render_target::get_current_buffer_texture(){
-        return m_impl->get_oriented_image(EPOrientation::EPOrientationAngles180);
+        return m_impl->get_current_buffer_texture();
     }
 
     void* offscreen_render_target::get_layer(){

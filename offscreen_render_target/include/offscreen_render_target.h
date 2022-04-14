@@ -10,13 +10,6 @@
 
 namespace bnb
 {
-    enum EPOrientation{
-        EPOrientationAngles0,
-        EPOrientationAngles90,
-        EPOrientationAngles180,
-        EPOrientationAngles270
-    };
-
     class offscreen_render_target : public bnb::oep::interfaces::offscreen_render_target, public bnb::oep::interfaces::offscreen_render_target_metal_extension
     {
     public:
@@ -24,14 +17,14 @@ namespace bnb
         ~offscreen_render_target();
         
         void cleanup_render_buffers();
-        void setup_offscreen_pixel_buffer(EPOrientation orientation);
-        std::tuple<int, int> getWidthHeight(EPOrientation orientation);
-        void setup_offscreen_render_target(EPOrientation orientation);
+        void setup_offscreen_pixel_buffer(bnb::oep::interfaces::rotation orientation);
+        std::tuple<int, int> getWidthHeight(bnb::oep::interfaces::rotation orientation);
+        void setup_offscreen_render_target(bnb::oep::interfaces::rotation orientation);
         void activate_metal();
         void flush_metal();
-        bnb::camera_orientation get_camera_orientation(EPOrientation orientation);
-        void draw(EPOrientation orientation);
-        CVPixelBufferRef get_oriented_image(EPOrientation orientation);
+        bnb::camera_orientation get_camera_orientation(bnb::oep::interfaces::rotation orientation);
+        void draw(bnb::oep::interfaces::rotation orientation);
+        CVPixelBufferRef get_image(bnb::oep::interfaces::rotation orientation);
         
         void init(int32_t width, int32_t height) override;
         void deinit() override;
