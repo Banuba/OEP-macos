@@ -461,9 +461,9 @@ namespace bnb
         m_impl->surface_changed(width, height);
     }
 
-    void offscreen_render_target::activate_context()    {}
-    void offscreen_render_target::deactivate_context()  {}
-    void offscreen_render_target::prepare_rendering()   {}
+    void offscreen_render_target::activate_context()    {/*There is no context in Metal*/}
+    void offscreen_render_target::deactivate_context()  {/*There is no context in Metal*/}
+    void offscreen_render_target::prepare_rendering()   {/*We don't need this function for Metal*/}
     
     void offscreen_render_target::orient_image(bnb::oep::interfaces::rotation orient){
         m_impl->orient_image(orient);
