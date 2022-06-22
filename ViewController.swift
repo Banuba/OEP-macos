@@ -31,7 +31,7 @@ class ViewController: NSViewController, NSWindowDelegate, AVCaptureVideoDataOutp
     override func viewDidLoad() {
         super.viewDidLoad()
         effectPlayerInit()
-        loadEffect(effectPath: "test_BG")
+        loadEffect(effectPath: <#place your effect here#>)
         setUpCamera()
     }
     
