@@ -50,11 +50,19 @@ function(set_target_folder target folder)
 endfunction()
 
 function(create_linking_flags result target)
-    
     set(linking_flags "")
-    get_target_property(dependency ${target} LINK_LIBRARIES)    
+    get_target_property(dependency ${target} LINK_LIBRARIES)
     foreach(item ${dependency})
-        set(linking_flags "${linking_flags} -l${item} -L$<TARGET_FILE_DIR:${item}>")    
+        if(TARGET ${item})
+            get_target_property(type ${item} TYPE)
+            if(NOT ${type} STREQUAL "INTERFACE_LIBRARY")
+                set(linking_flags "${linking_flags} -l${item} -L$<TARGET_FILE_DIR:${item}>")
+
+                set(deeper_linking_flags "")
+                create_linking_flags(deeper_linking_flags ${item})
+                set(linking_flags "${linking_flags} ${deeper_linking_flags}")
+            endif()
+        endif()
     endforeach()
 
     # return values

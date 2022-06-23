@@ -22,7 +22,6 @@ typedef void (^BNBOEPImageReadyBlock)(_Nullable CVPixelBufferRef pixelBuffer);
                   manualAudio:(BOOL)manual
                         token:(NSString*)token
                 resourcePaths:(nonnull NSArray<NSString *> *)resourcePaths;
-
 // /**
 //  * Async processImage method
 //  */
@@ -38,6 +37,11 @@ typedef void (^BNBOEPImageReadyBlock)(_Nullable CVPixelBufferRef pixelBuffer);
  * Deactivate current effect, the same can be reached by loading effect with the empty name via loadEffect
  */
 - (void)unloadEffect;
+
+/**
+ * lets the effect player know that the surface has changed
+ */
+- (void)surfaceChanged:(NSUInteger)width withHeight:(NSUInteger)height;
 
 /**
  * Let you call methods defined in the active effect's script passing additional data or changing effect's behaviour
