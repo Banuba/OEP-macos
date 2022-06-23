@@ -7,15 +7,19 @@ Quick start examples for integrating [Banuba SDK on macos](https://docs.banuba.c
     `bnb_viewer_standalone/bnb_sdk/` => `OEP_macos/bnb_sdk`
 3. Copy `bnb_viewer_standalone/third` files into the `OEP_macos/third` dir:
     `bnb_viewer_standalone/third/` => `OEP_macos/third`
-4. Copy and Paste your client token into the appropriate section of `OEP_macos/ViewController.swift`
-5. Load the OEP-module by executing the following commands:
+4. Copy `bnb_viewer_standalone/resources/effects` files into the `OEP_macos/resources` dir:
+    `bnb_viewer_standalone/resources/effects/` => `OEP_macos/resources`
+5. Copy and Paste your client token into the appropriate section of `OEP_macos/ViewController.swift`
+6. Configure effect in the appropriate section of `OEP_macos/ViewController.swift`, e.g. `test_BG`
+    More effects can be found [here](https://docs.banuba.com/face-ar-sdk-v1/overview/demo_face_filters)
+7. Load the OEP-module by executing the following commands:
     ##### MacOS build:
     ```
         cd %path_to_repository%
-        git submodule update --init
+        git submodule update --init --recursive
     ```
-    Then go to the `OEP-module` folder, open the `CMakeLists.txt` and set the "Use bnb offscreen_render_target implementation" and the "Use bnb camera implementation" options to `OFF`. We don`t need this parts of the OEP-module in this sample.
-6. Generate project files by executing the following commands:
+    Then go to the `OEP-module` folder, open the `CMakeLists.txt` and set the "Use bnb offscreen_render_target implementation" and "Use bnb image_processing_result implementation" options to `OFF`. We don`t need these parts of the OEP-module in this sample.
+8. Generate project files by executing the following commands:
     ##### MacOS build:
     ```
         cd %path_to_repository%
@@ -23,13 +27,13 @@ Quick start examples for integrating [Banuba SDK on macos](https://docs.banuba.c
         cd build
         cmake -G Xcode ..
     ```
-7. The previous step will generate a Xcode project for MacOS. Open the offscreen_effect_player_macos project in an appropriate IDE on your platform.
-8. Select target `example_mac`.
-9. Run build.
+9. The previous step will generate a Xcode project for MacOS. Open the offscreen_effect_player_macos project in an appropriate IDE on your platform.
+10. Select target `example_mac`.
+11. Run build.
 
 # Integration of the banuba_oep framework into the Xcode project
 
-1. Follow the first 6 steps from "Getting Started".
+1. Follow the first 8 steps from "Getting Started".
 2. Select target `banuba_oep` and build(Release and Debug).
 3. Copy the assembly framework `banuba_oep.framework` to your application directory. Path of its loation <build_folder>/oep_framework/$(Configuration).
 4. Copy the `bnb_sdk` to your application direcory.

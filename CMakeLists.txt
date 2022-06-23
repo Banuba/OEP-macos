@@ -50,7 +50,7 @@ set(RESOURCES
     ${BNB_RESOURCES_FOLDER}/Main.storyboard
     ${BNB_RESOURCES_FOLDER}/bnb_viewer.icns
     ${BNB_RESOURCES_FOLDER}/effects
-    ${BNB_RESOURCES_FOLDER}/OEPShaders.metallib
+    ${BNB_RESOURCES_FOLDER}/OEPShaders.metal
 )
 
 set(CMAKE_XCODE_GENERATE_SCHEME YES)

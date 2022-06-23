@@ -20,11 +20,9 @@
 @property(strong, nonatomic, readonly) id<MTLRenderPipelineState> pipelineState;
 @property(strong, nonatomic, readonly) id<MTLBuffer> indexBuffer;
 
-- (void)releaseResources;
-
 @end
 
-//MARK: MetalHelper -- Start
+// MARK: MetalHelper -- Start
 
 @interface MetalHelper ()
 
@@ -40,76 +38,88 @@
 
 @implementation MetalHelper
 {
-    id<MTLDevice> _device;
 }
 
-+ (instancetype)shared
+- (CVMetalTextureCacheRef)textureCache
 {
-    static MetalHelper* instance = [MetalHelper new];
-    return instance;
-}
+    if (!_textureCache) {
+        CVReturn status = CVMetalTextureCacheCreate(kCFAllocatorDefault, nil, self.device, nil, &_textureCache);
 
-- (void)releaseResources
-{
-    if (self.textureCache) {
-        CFRelease(self.textureCache);
-        self.textureCache = nil;
+        if (status != kCVReturnSuccess) {
+            NSLog(@"Could not create texture cache: %d", status);
+            @throw [NSException exceptionWithName:NSInternalInconsistencyException
+                                           reason:@"Could not create texture cache"
+                                         userInfo:nil];
+        }
     }
+    return _textureCache;
 }
 
-- (instancetype)init
+- (id<MTLDevice>)device
 {
-    self = [super init];
-
-    if (self) {
-        //choose device which connected to display
-        auto display_id = CGMainDisplayID();
-        _device = CGDirectDisplayCopyCurrentMetalDevice(display_id);
-        NSLog(@"GPU device name: %@", _device.name);
-
-        if (_device) {
-            _commandQueue = [_device newCommandQueue];
-
-            if (_commandQueue) {
-                NSBundle* bundle = [NSBundle mainBundle];
-                NSString *libPath = [bundle pathForResource:@"OEPShaders" ofType:@"metallib"];
-                NSError* error = nil;
-                _library = [_device newLibraryWithFile:libPath error:&error];
-                
-                if (!error) {
-                    CVReturn status = CVMetalTextureCacheCreate(kCFAllocatorDefault, nil, _device, nil, &_textureCache);
-
-                    if (status != kCVReturnSuccess) {
-                        NSLog(@"Could not create texture cache: %d", status);
-                        @throw [NSException exceptionWithName:NSInternalInconsistencyException
-                                                       reason:@"Could not create texture cache"
-                                                     userInfo:nil];
-                    }
-                } else {
-                    NSLog(@"Cannot create metal shaders library: %@", error);
-                    @throw [NSException exceptionWithName:NSInternalInconsistencyException
-                                                   reason:@"Cannot create metal shaders library"
-                                                 userInfo:nil];
-                }
-
-                unsigned int indices[] = {
-                    // clang-format off
-                    0, 1, 3, // first triangle
-                    1, 2, 3  // second triangle
-                    // clang-format on
-                };
-                self.indexBuffer = [self.device newBufferWithBytes:indices length:sizeof(indices) options:MTLResourceOptionCPUCacheModeDefault];
-            } else {
-                NSLog(@"Could not create commandQueue");
-                @throw [NSException exceptionWithName:NSGenericException reason:@"Could not create commandQueue" userInfo:nil];
-            }
-        } else {
+    if (!_device) {
+        _device = MTLCreateSystemDefaultDevice();
+        if (!_device) {
             NSLog(@"Could not create metal device");
             @throw [NSException exceptionWithName:NSGenericException reason:@"Could not create metal device" userInfo:nil];
         }
     }
+    return _device;
+}
 
-    return self;
+- (id<MTLCommandQueue>)commandQueue
+{
+    if (!_commandQueue) {
+        _commandQueue = [self.device newCommandQueue];
+        if (!_commandQueue) {
+            NSLog(@"Could not create commandQueue");
+            @throw [NSException exceptionWithName:NSGenericException reason:@"Could not create commandQueue" userInfo:nil];
+        }
+    }
+    return _commandQueue;
+}
+
+- (id<MTLLibrary>)library
+{
+    if (!_library) {
+        NSBundle* bundle = [NSBundle bundleForClass:[MetalHelper class]];
+        NSError* error = nil;
+        _library = [self.device newDefaultLibraryWithBundle:bundle error:&error];
+
+        if (error) {
+            NSLog(@"Cannot create metal shaders library: %@", error);
+            @throw [NSException exceptionWithName:NSInternalInconsistencyException
+                                           reason:@"Cannot create metal shaders library"
+                                         userInfo:nil];
+        }
+    }
+    return _library;
+}
+
+- (id<MTLBuffer>)indexBuffer
+{
+    if (!_indexBuffer) {
+        unsigned int indices[] = {
+            // clang-format off
+            0, 1, 3, // first triangle
+            1, 2, 3  // second triangle
+            // clang-format on
+        };
+        _indexBuffer = [self.device newBufferWithBytes:indices length:sizeof(indices) options:MTLResourceOptionCPUCacheModeDefault];
+    }
+    return _indexBuffer;
+}
+
+- (void)dealloc
+{
+    if (_textureCache) {
+        CFRelease(_textureCache);
+        _textureCache = nil;
+    }
+    _indexBuffer = nil;
+    _library = nil;
+    _commandQueue = nil;
+    _device = nil;
 }
 
 - (void)flush
@@ -157,7 +167,7 @@
     pipelineDescriptor.label = @"Render Pipeline";
     pipelineDescriptor.vertexFunction = vertexFunction;
     pipelineDescriptor.fragmentFunction = fragmentFunction;
-    pipelineDescriptor.colorAttachments[0].pixelFormat = MTLPixelFormatRGBA8Unorm;
+    pipelineDescriptor.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm;
 
     NSError* error = nil;
 
@@ -173,7 +183,8 @@
 }
 
 @end
-//MARK: MetalHelper -- End
+
+// MARK: MetalHelper -- End
 
 //MARK: BNBCopyableMetalLayer -- Start
 @implementation BNBCopyableMetalLayer
@@ -219,7 +230,9 @@ namespace bnb
         void deinit();
         void surface_changed(int32_t width, int32_t height);
         void* get_layer();
-        
+
+        MetalHelper* get_metal_helper();
+
     private:
         size_t m_width;
         size_t m_height;
@@ -232,14 +245,23 @@ namespace bnb
         CVMetalTextureRef texture;
         id<MTLBuffer> m_framebuffer{0};
         id<MTLBuffer> m_postProcessingFramebuffer{0};
-        MTLPixelFormat m_pixelFormat = MTLPixelFormatRGBA8Unorm;
+        MTLPixelFormat m_pixelFormat = MTLPixelFormatBGRA8Unorm;
         CVPixelBufferRef m_offscreenRenderPixelBuffer{nullptr};
         CVMetalTextureRef m_offscreenRenderTexture{nullptr};
         id<MTLTexture> m_offscreenRenderMetalTexture;
+        MetalHelper* m_metalHelper{nullptr};
     };
 
     offscreen_render_target::impl::impl(){}
-   
+
+    MetalHelper* offscreen_render_target::impl::get_metal_helper()
+    {
+        if (!m_metalHelper) {
+            m_metalHelper = [[MetalHelper alloc] init];
+        }
+        return m_metalHelper;
+    }
+
     void offscreen_render_target::impl::cleanup_render_buffers()
     {
         if (m_offscreenRenderPixelBuffer) {
@@ -284,9 +306,9 @@ namespace bnb
          auto [width, height] = getWidthHeight(orientation);
          CVReturn err = CVMetalTextureCacheCreateTextureFromImage(
              kCFAllocatorDefault,
-             [MetalHelper shared].textureCache,
+             get_metal_helper().textureCache,
              m_offscreenRenderPixelBuffer,
-             NULL,
+             nil,
              m_pixelFormat,
              width,
              height,
@@ -300,21 +322,22 @@ namespace bnb
          }
    
         m_offscreenRenderMetalTexture = CVMetalTextureGetTexture(m_offscreenRenderTexture);
-   
-         // Create once
-         [[MetalHelper shared] setupRenderPassDescriptorWithTexture:m_offscreenRenderMetalTexture];
-         [[MetalHelper shared] makeRenderPipelineWithVertexFunctionName:@"BNBOEPShaders::vertex_main"    fragmentFunctionName:@"BNBOEPShaders::fragment_main"];
+
+        // Create once
+        [get_metal_helper() setupRenderPassDescriptorWithTexture:m_offscreenRenderMetalTexture];
+        [get_metal_helper() makeRenderPipelineWithVertexFunctionName:@"BNBOEPShaders::vertex_main"    fragmentFunctionName:@"BNBOEPShaders::fragment_main"];
     }
    
     void offscreen_render_target::impl::activate_metal()
     {
-        m_command_queue = [MetalHelper shared].commandQueue;
+        m_command_queue = get_metal_helper().commandQueue;
         effectPlayerLayer = [[BNBCopyableMetalLayer alloc] init];
+        [effectPlayerLayer setFramebufferOnly:NO];
     }
    
     void offscreen_render_target::impl::flush_metal()
     {
-        [[MetalHelper shared] flush];
+        [get_metal_helper() flush];
     }
    
     bnb::camera_orientation offscreen_render_target::impl::get_camera_orientation(bnb::oep::interfaces::rotation orientation)
@@ -333,33 +356,35 @@ namespace bnb
    
     void offscreen_render_target::impl::draw(bnb::oep::interfaces::rotation orientation)
     {
-        id<MTLTexture> layerTexture = effectPlayerLayer.lastDrawable.texture;
-   
-        if (layerTexture) {
-            id<MTLCommandBuffer> commandBuffer = [m_command_queue commandBuffer];
-   
-            if (commandBuffer) {
-                MetalHelper* helper = [MetalHelper shared];
-                auto renderDescriptor = helper.renderPassDescriptor;
-                id<MTLRenderCommandEncoder> renderEncoder = [commandBuffer    renderCommandEncoderWithDescriptor:renderDescriptor];
-   
-                if (renderEncoder) {
-                    uint32_t orientation_data = static_cast<uint32_t>(orientation);
-                    [renderEncoder setVertexBytes:&orientation_data length:sizeof(orientation_data) atIndex:0];
-   
-   
-                    [renderEncoder setRenderPipelineState:helper.pipelineState];
-                    [renderEncoder setFragmentTexture:layerTexture atIndex:0];
-                    [renderEncoder drawIndexedPrimitives:MTLPrimitiveTypeTriangle indexCount:6    indexType:MTLIndexTypeUInt32 indexBuffer:helper.indexBuffer indexBufferOffset:0];
-   
-                    [renderEncoder endEncoding];
-                    [commandBuffer commit];
-                    [commandBuffer waitUntilCompleted];
+        @autoreleasepool {
+            id<MTLTexture> layerTexture = effectPlayerLayer.lastDrawable.texture;
+
+            if (layerTexture) {
+                id<MTLCommandBuffer> commandBuffer = [m_command_queue commandBuffer];
+
+                if (commandBuffer) {
+                    MetalHelper* helper = get_metal_helper();
+                    auto renderDescriptor = helper.renderPassDescriptor;
+                    id<MTLRenderCommandEncoder> renderEncoder = [commandBuffer    renderCommandEncoderWithDescriptor:renderDescriptor];
+
+                    if (renderEncoder) {
+                        uint32_t orientation_data = static_cast<uint32_t>(orientation);
+                        [renderEncoder setVertexBytes:&orientation_data length:sizeof(orientation_data) atIndex:0];
+
+
+                        [renderEncoder setRenderPipelineState:helper.pipelineState];
+                        [renderEncoder setFragmentTexture:layerTexture atIndex:0];
+                        [renderEncoder drawIndexedPrimitives:MTLPrimitiveTypeTriangle indexCount:6    indexType:MTLIndexTypeUInt32 indexBuffer:helper.indexBuffer indexBufferOffset:0];
+
+                        [renderEncoder endEncoding];
+                        [commandBuffer commit];
+                        [commandBuffer waitUntilCompleted];
+                    } else {
+                        NSLog(@"Rendering failed. Cannot create render encoder");
+                    }
                 } else {
-                    NSLog(@"Rendering failed. Cannot create render encoder");
+                    NSLog(@"Rendering failed. Cannot create command buffer");
                 }
-            } else {
-                NSLog(@"Rendering failed. Cannot create command buffer");
             }
         }
     }
@@ -395,8 +420,8 @@ namespace bnb
     }
 
     void offscreen_render_target::impl::deinit(){
-        [[MetalHelper shared] releaseResources];
         cleanup_render_buffers();
+        m_metalHelper = nullptr;
     }
 
     void offscreen_render_target::impl::surface_changed(int32_t width, int32_t height)
@@ -469,7 +494,10 @@ namespace bnb
         m_impl->orient_image(orient);
     }
 
-    pixel_buffer_sptr offscreen_render_target::read_current_buffer(bnb::oep::interfaces::image_format format){return nil;}
+    pixel_buffer_sptr offscreen_render_target::read_current_buffer(bnb::oep::interfaces::image_format format) {
+        // NOT implemented. See conversion in BNBOffscreenEffectPlayer.
+        return nil;
+    }
 
     rendered_texture_t offscreen_render_target::get_current_buffer_texture(){
         return m_impl->get_current_buffer_texture();

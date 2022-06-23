@@ -6,6 +6,13 @@
 #include "effect_player.hpp"
 #include "offscreen_render_target.h"
 
+@interface BNBOffscreenEffectPlayer ()
+
+- (CVPixelBufferRef)processOutputInBGRA:(CVPixelBufferRef)inputPixelBuffer CF_RETURNS_RETAINED;
+- (pixel_buffer_sptr)convertImage:(CVPixelBufferRef)pixelBuffer;
+
+@end
+
 @implementation BNBOffscreenEffectPlayer
 {
     NSUInteger _width;
@@ -56,17 +63,38 @@
 - (void)processImage:(CVPixelBufferRef)pixelBuffer completion:(BNBOEPImageReadyBlock _Nonnull)completion
 {
     pixel_buffer_sptr pixelBuffer_sprt([self convertImage:pixelBuffer]);
-    auto get_pixel_buffer_callback = [pixelBuffer, completion](image_processing_result_sptr result) {
+    __weak auto self_weak_ = self;
+    auto get_pixel_buffer_callback = [self_weak_, pixelBuffer, completion](image_processing_result_sptr result) {
         if (result != nullptr) {
-            auto render_callback = [completion](std::optional<rendered_texture_t> texture_id) {
+            OSType pixelFormatType = CVPixelBufferGetPixelFormatType(pixelBuffer);
+            auto render_callback = [self_weak_, pixelFormatType, completion](std::optional<rendered_texture_t> texture_id) {
                 if (texture_id.has_value()) {
-                    CVPixelBufferRef retBuffer = (CVPixelBufferRef)texture_id.value();
+                    __strong auto self = self_weak_;
 
-                    if (completion) {
-                        completion(retBuffer);
+                    CVPixelBufferRef textureBuffer = (CVPixelBufferRef)texture_id.value();
+
+                    // Perform conversion of texture (its type BGRA) which contains RGBA data to BGRA
+                    // For demonstration the conversion to RGBA only suported similarly can be done conversions to other formats
+                    CVPixelBufferRef returnedBuffer = nullptr;
+                    switch (pixelFormatType) {
+                        case kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange:
+                        case kCVPixelFormatType_420YpCbCr8BiPlanarFullRange:
+                        case kCVPixelFormatType_420YpCbCr8Planar:
+                        case kCVPixelFormatType_420YpCbCr8PlanarFullRange:
+                        case kCVPixelFormatType_32BGRA:
+                            returnedBuffer = [self processOutputInBGRA:textureBuffer];
+                            break;
+                        default:
+                            // Frame dropped: unsupported target pixel format.
+                            break;
                     }
 
-                    CVPixelBufferRelease(retBuffer);
+                    if (completion) {
+                        completion(returnedBuffer);
+                    }
+
+                    CVPixelBufferRelease(textureBuffer);
+                    CVPixelBufferRelease(returnedBuffer);
                 }
             };
             result->get_texture(render_callback);
@@ -128,10 +156,63 @@
     m_oep->unload_effect();
 }
 
+- (void)surfaceChanged:(NSUInteger)width withHeight:(NSUInteger)height
+{
+    NSAssert(self->m_oep != nil, @"No OffscreenEffectPlayer");
+    self->m_oep->surface_changed(width, height);
+}
+
 - (void)callJsMethod:(NSString* _Nonnull)method withParam:(NSString* _Nonnull)param
 {
     NSAssert(self->m_oep != nil, @"No OffscreenEffectPlayer");
     m_oep->call_js_method(std::string([method UTF8String]), std::string([param UTF8String]));
+}
+
+- (CVPixelBufferRef)processOutputInBGRA:(CVPixelBufferRef)inputPixelBuffer
+{
+    CVPixelBufferLockBaseAddress(inputPixelBuffer, kCVPixelBufferLock_ReadOnly);
+    unsigned char* baseAddress = (unsigned char*) CVPixelBufferGetBaseAddress(inputPixelBuffer);
+    auto width = CVPixelBufferGetWidth(inputPixelBuffer);
+    auto height = CVPixelBufferGetHeight(inputPixelBuffer);
+    auto bytesPerRow = CVPixelBufferGetBytesPerRow(inputPixelBuffer);
+
+    NSDictionary* pixelAttributes = @{(id) kCVPixelBufferIOSurfacePropertiesKey: @{}};
+    CVPixelBufferRef pixelBuffer = NULL;
+    auto result = CVPixelBufferCreate(
+        kCFAllocatorDefault,
+        width,
+        height,
+        kCVPixelFormatType_32BGRA,
+        (__bridge CFDictionaryRef)(pixelAttributes),
+        &pixelBuffer);
+    NSParameterAssert(result == kCVReturnSuccess && pixelBuffer != NULL);
+
+    CVPixelBufferLockBaseAddress(pixelBuffer, 0);
+    void* rgbOut = CVPixelBufferGetBaseAddress(pixelBuffer);
+    size_t rgbOutWidth = CVPixelBufferGetWidthOfPlane(pixelBuffer, 0);
+    size_t rgbOutHeight = CVPixelBufferGetHeightOfPlane(pixelBuffer, 0);
+    size_t rgbOutBytesPerRow = CVPixelBufferGetBytesPerRowOfPlane(pixelBuffer, 0);
+
+    vImage_Buffer sourceBufferInfo = {
+        .width = static_cast<vImagePixelCount>(width),
+        .height = static_cast<vImagePixelCount>(height),
+        .rowBytes = bytesPerRow,
+        .data = baseAddress};
+    vImage_Buffer outputBufferInfo = {
+        .width = rgbOutWidth,
+        .height = rgbOutHeight,
+        .rowBytes = rgbOutBytesPerRow,
+        .data = rgbOut};
+
+    const uint8_t permuteMap[4] = {2, 1, 0, 3}; // Convert to BGRA pixel format
+
+    vImagePermuteChannels_ARGB8888(&sourceBufferInfo, &outputBufferInfo, permuteMap, kvImageNoFlags);
+
+    CVPixelBufferUnlockBaseAddress(pixelBuffer, 0);
+
+    CVPixelBufferUnlockBaseAddress(inputPixelBuffer, kCVPixelBufferLock_ReadOnly);
+
+    return pixelBuffer;
 }
 
 @end
