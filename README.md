@@ -18,7 +18,7 @@ Quick start examples for integrating [Banuba SDK on macos](https://docs.banuba.c
         cd %path_to_repository%
         git submodule update --init --recursive
     ```
-    Then go to the `OEP-module` folder, open the `CMakeLists.txt` and set the "Use bnb offscreen_render_target implementation" and "Use bnb image_processing_result implementation" options to `OFF`. We don`t need these parts of the OEP-module in this sample.
+    Then go to the `OEP-module` folder, open the `CMakeLists.txt` and set the "Use bnb offscreen_render_target implementation" option to `OFF`. We don`t need this part of the OEP-module in this sample.
 8. Generate project files by executing the following commands:
     ##### MacOS build:
     ```
