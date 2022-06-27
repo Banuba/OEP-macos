@@ -58,7 +58,8 @@
 - (id<MTLDevice>)device
 {
     if (!_device) {
-        _device = MTLCreateSystemDefaultDevice();
+        auto display_id = CGMainDisplayID();
+        _device = CGDirectDisplayCopyCurrentMetalDevice(display_id);
         if (!_device) {
             NSLog(@"Could not create metal device");
             @throw [NSException exceptionWithName:NSGenericException reason:@"Could not create metal device" userInfo:nil];
