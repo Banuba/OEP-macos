@@ -320,7 +320,7 @@ namespace bnb
 
         if (err != noErr) {
             @throw [NSException exceptionWithName:NSInternalInconsistencyException
-                                           reason:@"Cannot create Metal texture from pixel buffer for the class    BNBOffscreenEffectPlayer"
+                                           reason:@"Cannot create Metal texture from pixel buffer for the class offscreen_render_target"
                                          userInfo:nil];
         }
 
@@ -507,13 +507,13 @@ namespace bnb
     }
 
     void offscreen_render_target::activate_context()
-    { /*There is no context in Metal*/
+    { /* Not implemented, unnecessary */
     }
     void offscreen_render_target::deactivate_context()
-    { /*There is no context in Metal*/
+    { /* Not implemented, unnecessary */
     }
     void offscreen_render_target::prepare_rendering()
-    { /*We don't need this function for Metal*/
+    { /* Not implemented, unnecessary */
     }
 
     void offscreen_render_target::orient_image(bnb::oep::interfaces::rotation orient)
