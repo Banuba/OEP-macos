@@ -168,6 +168,15 @@
     m_oep->call_js_method(std::string([method UTF8String]), std::string([param UTF8String]));
 }
 
+- (void)evalJs:(NSString*)script callback:(EvalJSResultCallBack)callback
+{
+    NSAssert(self->m_oep != nil, @"No OffscreenEffectPlayer");
+    auto ccallback = [back=callback](const std::string& result) {
+        back([NSString stringWithUTF8String:result.c_str()]);
+    };
+    m_oep->eval_js(std::string([script UTF8String]), ccallback);
+}
+
 - (CVPixelBufferRef)processOutputInBGRA:(CVPixelBufferRef)inputPixelBuffer
 {
     CVPixelBufferLockBaseAddress(inputPixelBuffer, kCVPixelBufferLock_ReadOnly);

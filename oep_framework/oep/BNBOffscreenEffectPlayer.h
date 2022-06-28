@@ -9,6 +9,11 @@
  */
 typedef void (^BNBOEPImageReadyBlock)(_Nullable CVPixelBufferRef pixelBuffer);
 
+/**
+ * block for callback in evalJS method
+ */
+typedef void (^EvalJSResultCallBack)(NSString* _Nonnull result);
+
 
 @interface BNBOffscreenEffectPlayer : NSObject
 
@@ -47,5 +52,10 @@ typedef void (^BNBOEPImageReadyBlock)(_Nullable CVPixelBufferRef pixelBuffer);
  * Let you call methods defined in the active effect's script passing additional data or changing effect's behaviour
  */
 - (void)callJsMethod:(NSString*)method withParam:(NSString*)param;
+
+/**
+ * Let you evaluate the code in  `script` in the active effect's script passing additional data or changing effect's behaviour
+ */
+- (void)evalJs:(NSString*)script callback:(EvalJSResultCallBack)callback;
 
 @end
