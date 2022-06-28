@@ -8,7 +8,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_MACOSX_BUNDLE YES)
 
 set(BNB_RESOURCES_FOLDER ${CMAKE_CURRENT_LIST_DIR}/resources)
-set(BNB_THIRD_FOLDER ${CMAKE_CURRENT_LIST_DIR}/third)
 
 # Set to OFF to disable ffmpeg dependency (SDK should be built with disabled video_player also)
 set(BNB_VIDEO_PLAYER ON)
