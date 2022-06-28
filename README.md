@@ -7,6 +7,12 @@ Quick start examples for integrating [Banuba SDK on macos](https://docs.banuba.c
     `bnb_viewer_standalone/bnb_sdk/` => `OEP_macos/bnb_sdk`
 3. Copy `bnb_viewer_standalone/third` files into the `OEP_macos/third` dir:
     `bnb_viewer_standalone/third/` => `OEP_macos/third`
+    NOTE: This sample only uses `glfw` library from the `third` folder, so please modify the CMakeLists.txt in that folder to remove unnecessary libraries:
+    ##### third/CmakeLists.txt
+    ```
+    add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/glfw)
+    ```
+    After that, all other libraries in the `third` folder can be removed to decrease the space usage of the sample.
 4. Copy `bnb_viewer_standalone/resources/effects` files into the `OEP_macos/resources` dir:
     `bnb_viewer_standalone/resources/effects/` => `OEP_macos/resources`
 5. Copy and Paste your client token into the appropriate section of `OEP_macos/ViewController.swift`

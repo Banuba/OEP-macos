@@ -15,7 +15,7 @@ namespace bnb
     public:
         offscreen_render_target();
         ~offscreen_render_target();
-        
+
         void cleanup_render_buffers();
         void setup_offscreen_pixel_buffer(bnb::oep::interfaces::rotation orientation);
         std::tuple<int, int> getWidthHeight(bnb::oep::interfaces::rotation orientation);
@@ -25,7 +25,7 @@ namespace bnb
         bnb::camera_orientation get_camera_orientation(bnb::oep::interfaces::rotation orientation);
         void draw(bnb::oep::interfaces::rotation orientation);
         CVPixelBufferRef get_image(bnb::oep::interfaces::rotation orientation);
-        
+
         void init(int32_t width, int32_t height) override;
         void deinit() override;
         void surface_changed(int32_t width, int32_t height) override;
@@ -36,9 +36,9 @@ namespace bnb
         pixel_buffer_sptr read_current_buffer(bnb::oep::interfaces::image_format format) override;
         rendered_texture_t get_current_buffer_texture() override;
         void* get_layer() override;
-        
+
     private:
         struct impl;
         std::unique_ptr<impl> m_impl;
     };
-} // bnb
+} // namespace bnb
