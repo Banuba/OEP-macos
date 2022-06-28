@@ -98,7 +98,7 @@ namespace bnb::oep
     }
 
     /* effect_player::eval_js */
-    void effect_player::eval_js(const std::string& script, const oep_eval_js_result_cb& result_callback)
+    void effect_player::eval_js(const std::string& script, const oep_eval_js_result_cb result_callback)
     {
         if (auto e_manager = m_ep->effect_manager()) {
             if (auto effect = e_manager->current()) {

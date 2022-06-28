@@ -171,10 +171,10 @@
 - (void)evalJs:(NSString*)script callback:(EvalJSResultCallBack)callback
 {
     NSAssert(self->m_oep != nil, @"No OffscreenEffectPlayer");
-    auto ccallback = [back=callback](const std::string& result) {
-        back([NSString stringWithUTF8String:result.c_str()]);
+    auto result_callback = [callback=callback](const std::string& result) {
+        callback([NSString stringWithUTF8String:result.c_str()]);
     };
-    m_oep->eval_js(std::string([script UTF8String]), ccallback);
+    m_oep->eval_js(std::string([script UTF8String]), result_callback);
 }
 
 - (CVPixelBufferRef)processOutputInBGRA:(CVPixelBufferRef)inputPixelBuffer

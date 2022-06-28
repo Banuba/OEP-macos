@@ -54,7 +54,7 @@ typedef void (^EvalJSResultCallBack)(NSString* _Nonnull result);
 - (void)callJsMethod:(NSString*)method withParam:(NSString*)param;
 
 /**
- * Let you evaluate the code in  `script` in the active effect's script passing additional data or changing effect's behaviour
+ * Let you evaluate the code in  `script` for the active effect (passing additional data or changing effect's behaviour)
  */
 - (void)evalJs:(NSString*)script callback:(EvalJSResultCallBack)callback;
 
