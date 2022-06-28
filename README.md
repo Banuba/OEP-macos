@@ -7,6 +7,7 @@ Quick start examples for integrating [Banuba SDK on macos](https://docs.banuba.c
     `bnb_viewer_standalone/bnb_sdk/` => `OEP_macos/bnb_sdk`
 3. Copy `bnb_viewer_standalone/third` files into the `OEP_macos/third` dir:
     `bnb_viewer_standalone/third/` => `OEP_macos/third`
+    
     NOTE: This sample only uses `glfw` library from the `third` folder, so please modify the CMakeLists.txt in that folder to remove unnecessary libraries:
     ##### third/CmakeLists.txt
     ```
