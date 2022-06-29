@@ -11,8 +11,6 @@ namespace bnb::oep
     class effect_player;
 }
 
-using macos_effect_player_sptr = std::shared_ptr<bnb::oep::effect_player>;
-
 namespace bnb::oep
 {
     class effect_player : public bnb::oep::interfaces::effect_player, public bnb::oep::interfaces::effect_player_metal_extension
@@ -21,8 +19,6 @@ namespace bnb::oep
         effect_player(const std::vector<std::string>& path_to_resources, const std::string& client_token);
 
         ~effect_player();
-
-        static macos_effect_player_sptr create(const std::vector<std::string>& path_to_resources, const std::string& client_token);
 
         void surface_created(int32_t width, int32_t height) override;
 

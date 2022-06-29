@@ -12,11 +12,6 @@ namespace bnb::oep
         return std::make_shared<bnb::oep::effect_player>(path_to_resources, client_token);
     }
 
-    macos_effect_player_sptr effect_player::create(const std::vector<std::string>& path_to_resources, const std::string& client_token)
-    {
-        return std::make_shared<bnb::oep::effect_player>(path_to_resources, client_token);
-    }
-
     /* effect_player::effect_player CONSTRUCTOR */
     effect_player::effect_player(const std::vector<std::string>& path_to_resources, const std::string& client_token)
         : m_utility(path_to_resources, client_token)
