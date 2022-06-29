@@ -171,7 +171,7 @@
 - (void)evalJs:(NSString*)script callback:(EvalJSResultCallBack)callback
 {
     NSAssert(self->m_oep != nil, @"No OffscreenEffectPlayer");
-    auto result_callback = [callback=callback](const std::string& result) {
+    auto result_callback = [callback=std::move(callback)](const std::string& result) {
         callback([NSString stringWithUTF8String:result.c_str()]);
     };
     m_oep->eval_js(std::string([script UTF8String]), result_callback);
