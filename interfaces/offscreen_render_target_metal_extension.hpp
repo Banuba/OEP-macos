@@ -2,7 +2,6 @@
 
 namespace bnb::oep::interfaces
 {
-
     class offscreen_render_target_metal_extension
     {
     public:

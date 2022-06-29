@@ -6,9 +6,10 @@
 #include "effect_player.hpp"
 #include "offscreen_render_target.h"
 
+#include "utils.h"
+
 @interface BNBOffscreenEffectPlayer ()
 
-- (CVPixelBufferRef)processOutputInBGRA:(CVPixelBufferRef)inputPixelBuffer CF_RETURNS_RETAINED;
 - (pixel_buffer_sptr)convertImage:(CVPixelBufferRef)pixelBuffer;
 
 @end
@@ -34,26 +35,26 @@
                        height:(NSUInteger)height
                   manualAudio:(BOOL)manual
                         token:(NSString*)token
-                resourcePaths:(NSArray<NSString *> *)resourcePaths;
+                resourcePaths:(NSArray<NSString*>*)resourcePaths;
 {
     _width = width;
     _height = height;
 
     std::vector<std::string> paths;
     for (id object in resourcePaths) {
-        paths.push_back(std::string([(NSString*)object UTF8String]));
+        paths.push_back(std::string([(NSString*) object UTF8String]));
     }
-    
+
     m_ep = bnb::oep::effect_player::create(paths, std::string([token UTF8String]));
     m_ort = std::make_shared<bnb::offscreen_render_target>();
     m_oep = bnb::oep::interfaces::offscreen_effect_player::create(m_ep, m_ort, width, height);
-    
+
     auto me_ort = std::dynamic_pointer_cast<bnb::oep::interfaces::offscreen_render_target_metal_extension>(m_ort);
-    if (me_ort == nullptr){
+    if (me_ort == nullptr) {
         throw std::runtime_error("Offscreen render target must contain METAL-specific interface!\n");
     }
     auto me_ep = std::dynamic_pointer_cast<bnb::oep::interfaces::effect_player_metal_extension>(m_ep);
-    if (me_ep == nullptr){
+    if (me_ep == nullptr) {
         throw std::runtime_error("Effect player must contain METAL-specific interface!\n");
     }
     me_ep->set_render_surface(me_ort->get_layer());
@@ -63,6 +64,10 @@
 - (void)processImage:(CVPixelBufferRef)pixelBuffer completion:(BNBOEPImageReadyBlock _Nonnull)completion
 {
     pixel_buffer_sptr pixelBuffer_sprt([self convertImage:pixelBuffer]);
+    if (pixelBuffer_sprt == nullptr) {
+        return;
+    }
+
     __weak auto self_weak_ = self;
     auto get_pixel_buffer_callback = [self_weak_, pixelBuffer, completion](image_processing_result_sptr result) {
         if (result != nullptr) {
@@ -71,18 +76,23 @@
                 if (texture_id.has_value()) {
                     __strong auto self = self_weak_;
 
-                    CVPixelBufferRef textureBuffer = (CVPixelBufferRef)texture_id.value();
+                    CVPixelBufferRef textureBuffer = (CVPixelBufferRef) texture_id.value();
 
-                    // Perform conversion of texture (its type BGRA) which contains RGBA data to BGRA
-                    // For demonstration the conversion to RGBA only suported similarly can be done conversions to other formats
+                    // Perform conversion of texture (its type BGRA) which contains RGBA data to the source image format
                     CVPixelBufferRef returnedBuffer = nullptr;
                     switch (pixelFormatType) {
                         case kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange:
+                            returnedBuffer = bnb::convertBGRAtoNV12(textureBuffer, bnb::vrange::video_range);
+                            break;
                         case kCVPixelFormatType_420YpCbCr8BiPlanarFullRange:
+                            returnedBuffer = bnb::convertBGRAtoNV12(textureBuffer, bnb::vrange::full_range);
+                            break;
                         case kCVPixelFormatType_420YpCbCr8Planar:
+                            [[fallthrough]];
                         case kCVPixelFormatType_420YpCbCr8PlanarFullRange:
+                            [[fallthrough]];
                         case kCVPixelFormatType_32BGRA:
-                            returnedBuffer = [self processOutputInBGRA:textureBuffer];
+                            returnedBuffer = bnb::convertBGRAtoRGBA(textureBuffer);
                             break;
                         default:
                             // Frame dropped: unsupported target pixel format.
@@ -100,7 +110,7 @@
             result->get_texture(render_callback);
         }
     };
-    
+
     m_oep->process_image_async(pixelBuffer_sprt, bnb::oep::interfaces::rotation::deg0, get_pixel_buffer_callback, bnb::oep::interfaces::rotation::deg180);
 }
 
@@ -110,7 +120,9 @@
     pixel_buffer_sptr img;
 
     switch (pixelFormat) {
-        case kCVPixelFormatType_420YpCbCr8BiPlanarFullRange: {
+        case kCVPixelFormatType_420YpCbCr8BiPlanarFullRange:
+        case kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange:
+        {
             CVPixelBufferLockBaseAddress(pixelBuffer, kCVPixelBufferLock_ReadOnly);
             uint8_t* lumo = static_cast<uint8_t*>(CVPixelBufferGetBaseAddressOfPlane(pixelBuffer, 0));
             uint8_t* chromo = static_cast<uint8_t*>(CVPixelBufferGetBaseAddressOfPlane(pixelBuffer, 1));
@@ -135,13 +147,14 @@
                                     static_cast<int32_t>(CVPixelBufferGetBytesPerRowOfPlane(pixelBuffer, 0))};
 
             std::vector<ns::plane_data> planes{y_plane, uv_plane};
+            auto format = pixelFormat == kCVPixelFormatType_420YpCbCr8BiPlanarFullRange ? bnb::oep::interfaces::image_format::nv12_bt709_full : bnb::oep::interfaces::image_format::nv12_bt709_video;
             img = ns::create(planes, bnb::oep::interfaces::image_format::nv12_bt709_full, bufferWidth, bufferHeight);
         } break;
         default:
-            NSLog(@"ERROR TYPE : %d", pixelFormat);
+            NSLog(@"Unsupported pixel buffer format : %d", pixelFormat);
             return nil;
     }
-        return std::move(img);
+    return std::move(img);
 }
 
 - (void)loadEffect:(NSString* _Nonnull)effectName
@@ -166,53 +179,6 @@
 {
     NSAssert(self->m_oep != nil, @"No OffscreenEffectPlayer");
     m_oep->call_js_method(std::string([method UTF8String]), std::string([param UTF8String]));
-}
-
-- (CVPixelBufferRef)processOutputInBGRA:(CVPixelBufferRef)inputPixelBuffer
-{
-    CVPixelBufferLockBaseAddress(inputPixelBuffer, kCVPixelBufferLock_ReadOnly);
-    unsigned char* baseAddress = (unsigned char*) CVPixelBufferGetBaseAddress(inputPixelBuffer);
-    auto width = CVPixelBufferGetWidth(inputPixelBuffer);
-    auto height = CVPixelBufferGetHeight(inputPixelBuffer);
-    auto bytesPerRow = CVPixelBufferGetBytesPerRow(inputPixelBuffer);
-
-    NSDictionary* pixelAttributes = @{(id) kCVPixelBufferIOSurfacePropertiesKey: @{}};
-    CVPixelBufferRef pixelBuffer = NULL;
-    auto result = CVPixelBufferCreate(
-        kCFAllocatorDefault,
-        width,
-        height,
-        kCVPixelFormatType_32BGRA,
-        (__bridge CFDictionaryRef)(pixelAttributes),
-        &pixelBuffer);
-    NSParameterAssert(result == kCVReturnSuccess && pixelBuffer != NULL);
-
-    CVPixelBufferLockBaseAddress(pixelBuffer, 0);
-    void* rgbOut = CVPixelBufferGetBaseAddress(pixelBuffer);
-    size_t rgbOutWidth = CVPixelBufferGetWidthOfPlane(pixelBuffer, 0);
-    size_t rgbOutHeight = CVPixelBufferGetHeightOfPlane(pixelBuffer, 0);
-    size_t rgbOutBytesPerRow = CVPixelBufferGetBytesPerRowOfPlane(pixelBuffer, 0);
-
-    vImage_Buffer sourceBufferInfo = {
-        .width = static_cast<vImagePixelCount>(width),
-        .height = static_cast<vImagePixelCount>(height),
-        .rowBytes = bytesPerRow,
-        .data = baseAddress};
-    vImage_Buffer outputBufferInfo = {
-        .width = rgbOutWidth,
-        .height = rgbOutHeight,
-        .rowBytes = rgbOutBytesPerRow,
-        .data = rgbOut};
-
-    const uint8_t permuteMap[4] = {2, 1, 0, 3}; // Convert to BGRA pixel format
-
-    vImagePermuteChannels_ARGB8888(&sourceBufferInfo, &outputBufferInfo, permuteMap, kvImageNoFlags);
-
-    CVPixelBufferUnlockBaseAddress(pixelBuffer, 0);
-
-    CVPixelBufferUnlockBaseAddress(inputPixelBuffer, kCVPixelBufferLock_ReadOnly);
-
-    return pixelBuffer;
 }
 
 @end
