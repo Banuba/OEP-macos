@@ -40,7 +40,9 @@ namespace bnb::oep
     void effect_player::surface_changed(int32_t width, int32_t height)
     {
         m_ep->surface_changed(width, height);
-        m_ep->effect_manager()->set_effect_size(width, height);
+        if (auto em = m_ep->effect_manager()) {
+            em->set_effect_size(width, height);
+        }
     }
 
     void effect_player::surface_destroyed()
