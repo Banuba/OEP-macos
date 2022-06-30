@@ -1,4 +1,4 @@
- #include "offscreen_render_target.h"
+#include "offscreen_render_target.h"
 
 #include "utils.h"
 
@@ -210,11 +210,12 @@ using namespace std::literals;
 namespace bnb
 {
     //MARK: impl -- Start
-    struct offscreen_render_target::impl{
+    struct offscreen_render_target::impl
+    {
     public:
         explicit impl();
         ~impl() = default;
-        
+
         void cleanup_render_buffers();
         void setup_offscreen_pixel_buffer(bnb::oep::interfaces::rotation orientation);
         std::tuple<int, int> getWidthHeight(bnb::oep::interfaces::rotation orientation);
@@ -225,7 +226,7 @@ namespace bnb
         void draw(bnb::oep::interfaces::rotation orientation);
         CVPixelBufferRef get_current_buffer_texture();
         void orient_image(bnb::oep::interfaces::rotation orientation);
-        
+
         void init(int32_t width, int32_t height);
         void deinit();
         void surface_changed(int32_t width, int32_t height);
@@ -252,7 +253,9 @@ namespace bnb
         MetalHelper* m_metalHelper{nullptr};
     };
 
-    offscreen_render_target::impl::impl(){}
+    offscreen_render_target::impl::impl()
+    {
+    }
 
     MetalHelper* offscreen_render_target::impl::get_metal_helper()
     {
@@ -273,7 +276,7 @@ namespace bnb
             m_offscreenRenderTexture = nullptr;
         }
     }
-   
+
     void offscreen_render_target::impl::setup_offscreen_pixel_buffer(bnb::oep::interfaces::rotation orientation)
     {
         auto [width, height] = getWidthHeight(orientation);
@@ -281,65 +284,65 @@ namespace bnb
             (__bridge NSString*) kCVPixelBufferMetalCompatibilityKey: @YES,
             (__bridge NSString*) kCVPixelBufferIOSurfacePropertiesKey: @{}
         };
-   
+
         // We get data from oep in RGBA, macos defined kCVPixelFormatType_32RGBA but not supported
         // and we have to choose a different type. This does not in any way affect further
         // processing, inside bytes still remain in the order of the RGBA.
-        CVReturn err = CVPixelBufferCreate(kCFAllocatorDefault, width, height, kCVPixelFormatType_32BGRA, (__bridge    CFDictionaryRef) attrs, &m_offscreenRenderPixelBuffer);
-   
+        CVReturn err = CVPixelBufferCreate(kCFAllocatorDefault, width, height, kCVPixelFormatType_32BGRA, (__bridge CFDictionaryRef) attrs, &m_offscreenRenderPixelBuffer);
+
         if (err != noErr) {
             @throw [NSException exceptionWithName:NSInternalInconsistencyException
-                           reason:@"Cannot create offscreen pixel buffer"
-                           userInfo:nil];
+                                           reason:@"Cannot create offscreen pixel buffer"
+                                         userInfo:nil];
         }
     }
-   
+
     std::tuple<int, int> offscreen_render_target::impl::getWidthHeight(bnb::oep::interfaces::rotation orientation)
-     {
-         auto width = orientation == bnb::oep::interfaces::rotation::deg90 || orientation ==    bnb::oep::interfaces::rotation::deg270 ? m_height : m_width;
-         auto height = orientation == bnb::oep::interfaces::rotation::deg90 || orientation ==    bnb::oep::interfaces::rotation::deg270 ? m_width : m_height;
-         return {m_width, m_height};
-     }
-   
+    {
+        auto width = orientation == bnb::oep::interfaces::rotation::deg90 || orientation == bnb::oep::interfaces::rotation::deg270 ? m_height : m_width;
+        auto height = orientation == bnb::oep::interfaces::rotation::deg90 || orientation == bnb::oep::interfaces::rotation::deg270 ? m_width : m_height;
+        return {m_width, m_height};
+    }
+
     void offscreen_render_target::impl::setup_offscreen_render_target(bnb::oep::interfaces::rotation orientation)
     {
-         auto [width, height] = getWidthHeight(orientation);
-         CVReturn err = CVMetalTextureCacheCreateTextureFromImage(
-             kCFAllocatorDefault,
-             get_metal_helper().textureCache,
-             m_offscreenRenderPixelBuffer,
-             nil,
-             m_pixelFormat,
-             width,
-             height,
-             0,
-             &m_offscreenRenderTexture);
-   
-         if (err != noErr) {
-             @throw [NSException exceptionWithName:NSInternalInconsistencyException
-                            reason:@"Cannot create Metal texture from pixel buffer for the class    BNBOffscreenEffectPlayer"
-                           userInfo:nil];
-         }
-   
+        auto [width, height] = getWidthHeight(orientation);
+        CVReturn err = CVMetalTextureCacheCreateTextureFromImage(
+            kCFAllocatorDefault,
+            get_metal_helper().textureCache,
+            m_offscreenRenderPixelBuffer,
+            nil,
+            m_pixelFormat,
+            width,
+            height,
+            0,
+            &m_offscreenRenderTexture);
+
+        if (err != noErr) {
+            @throw [NSException exceptionWithName:NSInternalInconsistencyException
+                                           reason:@"Cannot create Metal texture from pixel buffer for the class offscreen_render_target"
+                                         userInfo:nil];
+        }
+
         m_offscreenRenderMetalTexture = CVMetalTextureGetTexture(m_offscreenRenderTexture);
 
         // Create once
         [get_metal_helper() setupRenderPassDescriptorWithTexture:m_offscreenRenderMetalTexture];
-        [get_metal_helper() makeRenderPipelineWithVertexFunctionName:@"BNBOEPShaders::vertex_main"    fragmentFunctionName:@"BNBOEPShaders::fragment_main"];
+        [get_metal_helper() makeRenderPipelineWithVertexFunctionName:@"BNBOEPShaders::vertex_main" fragmentFunctionName:@"BNBOEPShaders::fragment_main"];
     }
-   
+
     void offscreen_render_target::impl::activate_metal()
     {
         m_command_queue = get_metal_helper().commandQueue;
         effectPlayerLayer = [[BNBCopyableMetalLayer alloc] init];
         [effectPlayerLayer setFramebufferOnly:NO];
     }
-   
+
     void offscreen_render_target::impl::flush_metal()
     {
         [get_metal_helper() flush];
     }
-   
+
     bnb::camera_orientation offscreen_render_target::impl::get_camera_orientation(bnb::oep::interfaces::rotation orientation)
     {
         switch (orientation) {
@@ -353,7 +356,7 @@ namespace bnb
                 return bnb::camera_orientation::deg_0;
         }
     }
-   
+
     void offscreen_render_target::impl::draw(bnb::oep::interfaces::rotation orientation)
     {
         @autoreleasepool {
@@ -365,7 +368,7 @@ namespace bnb
                 if (commandBuffer) {
                     MetalHelper* helper = get_metal_helper();
                     auto renderDescriptor = helper.renderPassDescriptor;
-                    id<MTLRenderCommandEncoder> renderEncoder = [commandBuffer    renderCommandEncoderWithDescriptor:renderDescriptor];
+                    id<MTLRenderCommandEncoder> renderEncoder = [commandBuffer renderCommandEncoderWithDescriptor:renderDescriptor];
 
                     if (renderEncoder) {
                         uint32_t orientation_data = static_cast<uint32_t>(orientation);
@@ -374,7 +377,7 @@ namespace bnb
 
                         [renderEncoder setRenderPipelineState:helper.pipelineState];
                         [renderEncoder setFragmentTexture:layerTexture atIndex:0];
-                        [renderEncoder drawIndexedPrimitives:MTLPrimitiveTypeTriangle indexCount:6    indexType:MTLIndexTypeUInt32 indexBuffer:helper.indexBuffer indexBufferOffset:0];
+                        [renderEncoder drawIndexedPrimitives:MTLPrimitiveTypeTriangle indexCount:6 indexType:MTLIndexTypeUInt32 indexBuffer:helper.indexBuffer indexBufferOffset:0];
 
                         [renderEncoder endEncoding];
                         [commandBuffer commit];
@@ -390,13 +393,14 @@ namespace bnb
     }
 
 
-
-    CVPixelBufferRef offscreen_render_target::impl::get_current_buffer_texture(){
+    CVPixelBufferRef offscreen_render_target::impl::get_current_buffer_texture()
+    {
         CVPixelBufferRetain(m_offscreenRenderPixelBuffer);
         return m_offscreenRenderPixelBuffer;
     }
 
-    void offscreen_render_target::impl::orient_image(bnb::oep::interfaces::rotation orientation){
+    void offscreen_render_target::impl::orient_image(bnb::oep::interfaces::rotation orientation)
+    {
         if (m_prev_orientation != static_cast<int>(orientation)) {
             if (m_offscreenRenderPixelBuffer != nullptr) {
                 cleanup_render_buffers();
@@ -413,13 +417,15 @@ namespace bnb
         flush_metal();
     }
 
-    void offscreen_render_target::impl::init(int32_t width, int32_t height) {
+    void offscreen_render_target::impl::init(int32_t width, int32_t height)
+    {
         m_width = width;
         m_height = height;
         activate_metal();
     }
 
-    void offscreen_render_target::impl::deinit(){
+    void offscreen_render_target::impl::deinit()
+    {
         cleanup_render_buffers();
         m_metalHelper = nullptr;
     }
@@ -430,80 +436,104 @@ namespace bnb
         m_width = width;
         m_height = height;
     }
-    
-    void* offscreen_render_target::impl::get_layer(){
-        return (void*)CFBridgingRetain(effectPlayerLayer);
-    }
-//MARK: impl -- Finish
 
-//MARK: offscreen_render_target -- Start
-    offscreen_render_target::offscreen_render_target() {}
+    void* offscreen_render_target::impl::get_layer()
+    {
+        return (void*) CFBridgingRetain(effectPlayerLayer);
+    }
+    //MARK: impl -- Finish
+
+    //MARK: offscreen_render_target -- Start
+    offscreen_render_target::offscreen_render_target()
+    {
+    }
 
     offscreen_render_target::~offscreen_render_target() = default;
 
-    void offscreen_render_target::cleanup_render_buffers(){
+    void offscreen_render_target::cleanup_render_buffers()
+    {
         m_impl->cleanup_render_buffers();
     }
 
-    void offscreen_render_target::setup_offscreen_pixel_buffer(bnb::oep::interfaces::rotation orientation){
+    void offscreen_render_target::setup_offscreen_pixel_buffer(bnb::oep::interfaces::rotation orientation)
+    {
         m_impl->setup_offscreen_pixel_buffer(orientation);
     }
 
-    std::tuple<int, int> offscreen_render_target::getWidthHeight(bnb::oep::interfaces::rotation orientation){
+    std::tuple<int, int> offscreen_render_target::getWidthHeight(bnb::oep::interfaces::rotation orientation)
+    {
         return m_impl->getWidthHeight(orientation);
     }
 
-    void offscreen_render_target::setup_offscreen_render_target(bnb::oep::interfaces::rotation orientation){
+    void offscreen_render_target::setup_offscreen_render_target(bnb::oep::interfaces::rotation orientation)
+    {
         m_impl->setup_offscreen_render_target(orientation);
     }
 
-    void offscreen_render_target::activate_metal(){
+    void offscreen_render_target::activate_metal()
+    {
         m_impl->activate_metal();
     }
 
-    void offscreen_render_target::flush_metal(){
+    void offscreen_render_target::flush_metal()
+    {
         m_impl->flush_metal();
     }
 
-    bnb::camera_orientation offscreen_render_target::get_camera_orientation(bnb::oep::interfaces::rotation orientation){
+    bnb::camera_orientation offscreen_render_target::get_camera_orientation(bnb::oep::interfaces::rotation orientation)
+    {
         return m_impl->get_camera_orientation(orientation);
     }
 
-    void offscreen_render_target::draw(bnb::oep::interfaces::rotation orientation){
+    void offscreen_render_target::draw(bnb::oep::interfaces::rotation orientation)
+    {
         m_impl->draw(orientation);
     }
 
-    void offscreen_render_target::init(int32_t width, int32_t height){
+    void offscreen_render_target::init(int32_t width, int32_t height)
+    {
         m_impl = std::make_unique<impl>();
         m_impl->init(width, height);
     }
 
-    void offscreen_render_target::deinit() {
+    void offscreen_render_target::deinit()
+    {
         m_impl->deinit();
     }
 
-    void offscreen_render_target::surface_changed(int32_t width, int32_t height){
+    void offscreen_render_target::surface_changed(int32_t width, int32_t height)
+    {
         m_impl->surface_changed(width, height);
     }
 
-    void offscreen_render_target::activate_context()    {/*There is no context in Metal*/}
-    void offscreen_render_target::deactivate_context()  {/*There is no context in Metal*/}
-    void offscreen_render_target::prepare_rendering()   {/*We don't need this function for Metal*/}
-    
-    void offscreen_render_target::orient_image(bnb::oep::interfaces::rotation orient){
+    void offscreen_render_target::activate_context()
+    { /* Not implemented, unnecessary */
+    }
+    void offscreen_render_target::deactivate_context()
+    { /* Not implemented, unnecessary */
+    }
+    void offscreen_render_target::prepare_rendering()
+    { /* Not implemented, unnecessary */
+    }
+
+    void offscreen_render_target::orient_image(bnb::oep::interfaces::rotation orient)
+    {
         m_impl->orient_image(orient);
     }
 
-    pixel_buffer_sptr offscreen_render_target::read_current_buffer(bnb::oep::interfaces::image_format format) {
+    pixel_buffer_sptr offscreen_render_target::read_current_buffer(bnb::oep::interfaces::image_format format)
+    {
         // NOT implemented. See conversion in BNBOffscreenEffectPlayer.
         return nil;
     }
 
-    rendered_texture_t offscreen_render_target::get_current_buffer_texture(){
+    rendered_texture_t offscreen_render_target::get_current_buffer_texture()
+    {
         return m_impl->get_current_buffer_texture();
     }
 
-    void* offscreen_render_target::get_layer(){
+    void* offscreen_render_target::get_layer()
+    {
         return m_impl->get_layer();
     }
 

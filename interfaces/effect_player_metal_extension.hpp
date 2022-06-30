@@ -4,12 +4,11 @@
 
 namespace bnb::oep::interfaces
 {
-
     class effect_player_metal_extension
     {
     public:
         virtual ~effect_player_metal_extension() = default;
-        
+
         /**
          * Needed for METAL only
          * Set the render surface for the effect player.

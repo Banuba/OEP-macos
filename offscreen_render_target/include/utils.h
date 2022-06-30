@@ -12,7 +12,6 @@ namespace bnb
 
     void runOnMainQueue(std::function<void()> f);
 
-    void* nsGLGetProcAddress(const char *name);
-
-    CVPixelBufferRef convertRGBAtoNV12(CVPixelBufferRef inputPixelBuffer, vrange range);
-} // bnb
+    CVPixelBufferRef convertBGRAtoNV12(CVPixelBufferRef inputPixelBuffer, vrange range);
+    CVPixelBufferRef convertBGRAtoRGBA(CVPixelBufferRef inputPixelBuffer);
+} // namespace bnb

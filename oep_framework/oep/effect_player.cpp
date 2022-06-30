@@ -32,10 +32,6 @@ namespace bnb::oep
         return std::make_shared<bnb::oep::effect_player>(path_to_resources, client_token);
     }
 
-    macos_effect_player_sptr effect_player::create(const std::vector<std::string>& path_to_resources, const std::string& client_token){
-        return std::make_shared<bnb::oep::effect_player>(path_to_resources, client_token);
-    }
-
     /* effect_player::effect_player CONSTRUCTOR */
     effect_player::effect_player(const std::vector<std::string>& path_to_resources, const std::string& client_token)
         : m_utility(path_to_resources, client_token)
@@ -64,7 +60,9 @@ namespace bnb::oep
     void effect_player::surface_changed(int32_t width, int32_t height)
     {
         m_ep->surface_changed(width, height);
-        m_ep->effect_manager()->set_effect_size(width, height);
+        if (auto em = m_ep->effect_manager()) {
+            em->set_effect_size(width, height);
+        }
     }
 
     void effect_player::surface_destroyed()
@@ -180,7 +178,8 @@ namespace bnb::oep
         }
     }
 
-    void effect_player::set_render_surface(void* layer){
+    void effect_player::set_render_surface(void* layer)
+    {
         if (auto effect_manager = m_ep->effect_manager()) {
             effect_manager->set_render_surface((int64_t) layer);
         }
@@ -188,7 +187,7 @@ namespace bnb::oep
 
     bnb::image_format effect_player::make_bnb_image_format(pixel_buffer_sptr image, interfaces::rotation orientation)
     {
-        bnb::camera_orientation camera_orient {bnb::camera_orientation::deg_0};
+        bnb::camera_orientation camera_orient{bnb::camera_orientation::deg_0};
 
         using ns = bnb::oep::interfaces::rotation;
         switch (orientation) {
@@ -211,9 +210,9 @@ namespace bnb::oep
 
     bnb::yuv_format_t effect_player::make_bnb_yuv_format(pixel_buffer_sptr image)
     {
-        bnb::yuv_format format {bnb::yuv_format::yuv_nv12};  /* i.e. NV12 or I420 */
-        bnb::color_std standard {bnb::color_std::bt601}; /* i.e. BT.601 or BT.709 */
-        bnb::color_range range {bnb::color_range::full}; /* i.e. "full" or "video" */
+        bnb::yuv_format format{bnb::yuv_format::yuv_nv12}; /* i.e. NV12 or I420 */
+        bnb::color_std standard{bnb::color_std::bt601};    /* i.e. BT.601 or BT.709 */
+        bnb::color_range range{bnb::color_range::full};    /* i.e. "full" or "video" */
 
         using ns = bnb::oep::interfaces::image_format;
         switch (image->get_image_format()) {
@@ -254,7 +253,7 @@ namespace bnb::oep
 
     bnb::interfaces::pixel_format effect_player::make_bnb_pixel_format(pixel_buffer_sptr image)
     {
-        bnb::interfaces::pixel_format fmt {bnb::interfaces::pixel_format::rgb};
+        bnb::interfaces::pixel_format fmt{bnb::interfaces::pixel_format::rgb};
 
         using ns = bnb::oep::interfaces::image_format;
         switch (image->get_image_format()) {

@@ -26,7 +26,7 @@ typedef void (^BNBOEPEvalJsResult)(NSString* _Nonnull result);
                        height:(NSUInteger)height
                   manualAudio:(BOOL)manual
                         token:(NSString*)token
-                resourcePaths:(nonnull NSArray<NSString *> *)resourcePaths;
+                resourcePaths:(nonnull NSArray<NSString*>*)resourcePaths;
 // /**
 //  * Async processImage method
 //  */

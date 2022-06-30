@@ -11,19 +11,14 @@ namespace bnb::oep
     class effect_player;
 }
 
-using macos_effect_player_sptr = std::shared_ptr<bnb::oep::effect_player>;
-
 namespace bnb::oep
 {
-
     class effect_player : public bnb::oep::interfaces::effect_player, public bnb::oep::interfaces::effect_player_metal_extension
     {
     public:
         effect_player(const std::vector<std::string>& path_to_resources, const std::string& client_token);
 
         ~effect_player();
-
-        static macos_effect_player_sptr create(const std::vector<std::string>& path_to_resources, const std::string& client_token);
 
         void surface_created(int32_t width, int32_t height) override;
 
@@ -46,7 +41,7 @@ namespace bnb::oep
         void push_frame(pixel_buffer_sptr image, bnb::oep::interfaces::rotation image_orientation) override;
 
         void draw() override;
-        
+
         void set_render_surface(void* layer) override;
 
     private:
@@ -57,7 +52,7 @@ namespace bnb::oep
     private:
         bnb::utility m_utility;
         std::shared_ptr<bnb::interfaces::effect_player> m_ep;
-        std::atomic_bool m_is_surface_created {false};
+        std::atomic_bool m_is_surface_created{false};
     }; /* class effect_player */
 
 } /* namespace bnb::oep */
