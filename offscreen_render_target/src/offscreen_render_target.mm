@@ -185,15 +185,12 @@
 @end
 
 // MARK: MetalHelper -- End
-
 //MARK: BNBCopyableMetalLayer -- Start
 @implementation BNBCopyableMetalLayer
 
 - (id<CAMetalDrawable>)nextDrawable
 {
-    self.lastDrawable = self.currentDrawable;
     self.currentDrawable = [super nextDrawable];
-
     return self.currentDrawable;
 }
 
@@ -230,7 +227,7 @@ namespace bnb
         void init(int32_t width, int32_t height);
         void deinit();
         void surface_changed(int32_t width, int32_t height);
-        void* get_layer();
+        interfaces::surface_data get_layer();
 
         MetalHelper* get_metal_helper();
 
@@ -360,7 +357,7 @@ namespace bnb
     void offscreen_render_target::impl::draw(bnb::oep::interfaces::rotation orientation)
     {
         @autoreleasepool {
-            id<MTLTexture> layerTexture = effectPlayerLayer.lastDrawable.texture;
+            id<MTLTexture> layerTexture = effectPlayerLayer.currentDrawable.texture;
 
             if (layerTexture) {
                 id<MTLCommandBuffer> commandBuffer = [m_command_queue commandBuffer];
@@ -428,6 +425,7 @@ namespace bnb
     {
         cleanup_render_buffers();
         m_metalHelper = nullptr;
+        effectPlayerLayer = nullptr;
     }
 
     void offscreen_render_target::impl::surface_changed(int32_t width, int32_t height)
@@ -437,9 +435,15 @@ namespace bnb
         m_height = height;
     }
 
-    void* offscreen_render_target::impl::get_layer()
+    interfaces::surface_data offscreen_render_target::impl::get_layer()
     {
-        return (void*) CFBridgingRetain(effectPlayerLayer);
+        auto helper = get_metal_helper();
+        interfaces::surface_data data(
+            reinterpret_cast<int64_t>(helper.device),
+            reinterpret_cast<int64_t>(helper.commandQueue),
+            reinterpret_cast<int64_t>(effectPlayerLayer)
+        );
+        return data;
     }
     //MARK: impl -- Finish
 
@@ -532,7 +536,7 @@ namespace bnb
         return m_impl->get_current_buffer_texture();
     }
 
-    void* offscreen_render_target::get_layer()
+    interfaces::surface_data offscreen_render_target::get_layer()
     {
         return m_impl->get_layer();
     }

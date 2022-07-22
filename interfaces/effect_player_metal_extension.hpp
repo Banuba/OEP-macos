@@ -2,6 +2,11 @@
 
 #include <vector>
 
+namespace bnb::interfaces
+{
+    class surface_data;
+}
+
 namespace bnb::oep::interfaces
 {
     class effect_player_metal_extension
@@ -17,7 +22,8 @@ namespace bnb::oep::interfaces
          *
          * @example set_render_surface(layer)
          */
-        virtual void set_render_surface(void* layer) = 0;
+        virtual void set_render_surface(const bnb::interfaces::surface_data&) = 0;
+        virtual void disable_surface_presentation() = 0;
     };
 
 } /* namespace bnb::oep::interfaces */
