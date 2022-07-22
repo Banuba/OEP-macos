@@ -178,10 +178,17 @@ namespace bnb::oep
         }
     }
 
-    void effect_player::set_render_surface(void* layer)
+    void effect_player::set_render_surface(const bnb::interfaces::surface_data& data)
     {
         if (auto effect_manager = m_ep->effect_manager()) {
-            effect_manager->set_render_surface((int64_t) layer);
+            effect_manager->set_render_surface(data);
+        }
+    }
+
+    void effect_player::disable_surface_presentation()
+    {
+        if (auto effect_manager = m_ep->effect_manager()) {
+            effect_manager->disable_surface_presentation();
         }
     }
 

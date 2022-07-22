@@ -1,7 +1,7 @@
 #pragma once
 
 #include <bnb/types/base_types.hpp>
-
+#include <bnb/effect_player/interfaces/surface_data.hpp>
 #include <interfaces/offscreen_render_target.hpp>
 
 #include "interfaces/offscreen_render_target_metal_extension.hpp"
@@ -35,7 +35,7 @@ namespace bnb
         void orient_image(bnb::oep::interfaces::rotation orient) override;
         pixel_buffer_sptr read_current_buffer(bnb::oep::interfaces::image_format format) override;
         rendered_texture_t get_current_buffer_texture() override;
-        void* get_layer() override;
+        interfaces::surface_data get_layer() override;
 
     private:
         struct impl;

@@ -1,5 +1,10 @@
 #pragma once
 
+namespace bnb::interfaces
+{
+    class surface_data;
+}
+
 namespace bnb::oep::interfaces
 {
     class offscreen_render_target_metal_extension
@@ -16,7 +21,7 @@ namespace bnb::oep::interfaces
          *
          * @example get_layer()
          */
-        virtual void* get_layer() = 0;
+        virtual bnb::interfaces::surface_data get_layer() = 0;
     };
 
 } /* namespace bnb::oep::interfaces */

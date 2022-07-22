@@ -42,7 +42,9 @@ namespace bnb::oep
 
         void draw() override;
 
-        void set_render_surface(void* layer) override;
+        void set_render_surface(const bnb::interfaces::surface_data& data) override;
+
+        void disable_surface_presentation() override;
 
     private:
         bnb::image_format make_bnb_image_format(pixel_buffer_sptr image, interfaces::rotation orientation);
