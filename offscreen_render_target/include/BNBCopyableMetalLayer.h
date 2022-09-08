@@ -8,13 +8,12 @@
 
 @interface BNBCopyableMetalLayer : CAMetalLayer
 
-@property(strong, nonatomic, readonly) id<CAMetalDrawable> lastDrawable;
+@property(strong, nonatomic, readonly) id<CAMetalDrawable> currentDrawable;
 
 @end
 
 @interface BNBCopyableMetalLayer ()
 
-@property(strong, nonatomic, readwrite) id<CAMetalDrawable> lastDrawable;
 @property(strong, nonatomic, readwrite) id<CAMetalDrawable> currentDrawable;
 
 @end

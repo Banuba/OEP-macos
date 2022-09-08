@@ -58,6 +58,7 @@
         throw std::runtime_error("Effect player must contain METAL-specific interface!\n");
     }
     me_ep->set_render_surface(me_ort->get_layer());
+    me_ep->disable_surface_presentation();
     return self;
 }
 
