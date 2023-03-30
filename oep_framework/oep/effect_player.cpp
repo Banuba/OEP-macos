@@ -37,13 +37,9 @@ namespace bnb::oep
         : m_utility(path_to_resources, client_token)
         // the description of the passed parameters can be found at the link:
         // https://docs.banuba.com/face-ar-sdk/generated/doxygen/html/structbnb_1_1interfaces_1_1effect__player__configuration.html#a810709129e2bc13eae190305861345ce
-        , m_ep(bnb::interfaces::effect_player::create({
-            1,
-            1,
-            bnb::interfaces::nn_mode::automatically,
-            bnb::interfaces::face_search_mode::good,
-            false,
-            false}))
+        , m_ep(bnb::interfaces::effect_player::create(
+            bnb::interfaces::effect_player_configuration::create(1, 1)
+          ))
     {
     }
 
