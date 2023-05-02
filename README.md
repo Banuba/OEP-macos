@@ -3,8 +3,8 @@ Quick start examples for integrating [Banuba SDK on macos](https://docs.banuba.c
 # Getting Started
 
 1. Get the latest Banuba SDK archive for MacOS and the client token. Please fill out our form at [form at banuba.com](https://www.banuba.com/face-filters-sdk) website, or contact us via [info@banuba.com](mailto:info@banuba.com).
-2. Copy `bab_sdk.zip/mac` into the `OEP_macos/bnb_sdk` dir.
-3. Copy `bab_sdk.zip/effects` files into the `OEP_macos/resources` dir.
+2. Copy `bnb_sdk.zip/mac` into the `OEP_macos/bnb_sdk` dir.
+3. Copy `bnb_sdk.zip/effects` files into the `OEP_macos/resources` dir.
 4. Copy and Paste your client token into the appropriate section of [`OEP_macos/ViewController.swift`](ViewController.swift#L21)
 5. Configure effect in the appropriate section of [`OEP_macos/ViewController.swift`](ViewController.swift#L26), e.g. `test_BG`
     More effects can be found [here](https://docs.banuba.com/face-ar-sdk-v1/overview/demo_face_filters)
