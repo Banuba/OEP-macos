@@ -19,6 +19,7 @@
     NSUInteger _width;
     NSUInteger _height;
 
+    std::shared_ptr<bnb::utility> m_util;
     effect_player_sptr m_ep;
     offscreen_render_target_sptr m_ort;
     offscreen_effect_player_sptr m_oep;
@@ -45,9 +46,11 @@
         paths.push_back(std::string([(NSString*) object UTF8String]));
     }
 
-    m_ep = bnb::oep::effect_player::create(paths, std::string([token UTF8String]));
+    m_util = std::make_shared<bnb::utility>(paths, std::string([token UTF8String]));
+
+    m_ep = bnb::oep::effect_player::create(static_cast<int32_t>(width), static_cast<int32_t>(height));
     m_ort = std::make_shared<bnb::offscreen_render_target>();
-    m_oep = bnb::oep::interfaces::offscreen_effect_player::create(m_ep, m_ort, width, height);
+    m_oep = bnb::oep::interfaces::offscreen_effect_player::create(m_ep, m_ort, static_cast<int32_t>(width), static_cast<int32_t>(height));
 
     auto me_ort = std::dynamic_pointer_cast<bnb::oep::interfaces::offscreen_render_target_metal_extension>(m_ort);
     if (me_ort == nullptr) {
@@ -112,7 +115,7 @@
         }
     };
 
-    m_oep->process_image_async(pixelBuffer_sprt, bnb::oep::interfaces::rotation::deg0, get_pixel_buffer_callback, bnb::oep::interfaces::rotation::deg180);
+    m_oep->process_image_async(pixelBuffer_sprt, bnb::oep::interfaces::rotation::deg0, true, get_pixel_buffer_callback, bnb::oep::interfaces::rotation::deg180);
 }
 
 - (pixel_buffer_sptr)convertImage:(CVPixelBufferRef)pixelBuffer

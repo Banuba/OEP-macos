@@ -16,7 +16,7 @@ namespace bnb::oep
     class effect_player : public bnb::oep::interfaces::effect_player, public bnb::oep::interfaces::effect_player_metal_extension
     {
     public:
-        effect_player(const std::vector<std::string>& path_to_resources, const std::string& client_token);
+        effect_player(int32_t width, int32_t height);
 
         ~effect_player();
 
@@ -38,21 +38,20 @@ namespace bnb::oep
 
         void stop() override;
 
-        void push_frame(pixel_buffer_sptr image, bnb::oep::interfaces::rotation image_orientation) override;
+        void push_frame(pixel_buffer_sptr image, bnb::oep::interfaces::rotation image_orientation, bool require_mirroring) override;
 
-        void draw() override;
+        int64_t draw() override;
 
         void set_render_surface(const bnb::interfaces::surface_data& data) override;
 
         void disable_surface_presentation() override;
 
     private:
-        bnb::image_format make_bnb_image_format(pixel_buffer_sptr image, interfaces::rotation orientation);
+        bnb::image_format make_bnb_image_format(pixel_buffer_sptr image, interfaces::rotation orientation, bool require_mirroring);
         bnb::yuv_format_t make_bnb_yuv_format(pixel_buffer_sptr image);
         bnb::interfaces::pixel_format make_bnb_pixel_format(pixel_buffer_sptr image);
 
     private:
-        bnb::utility m_utility;
         std::shared_ptr<bnb::interfaces::effect_player> m_ep;
         std::atomic_bool m_is_surface_created{false};
     }; /* class effect_player */

@@ -27,19 +27,16 @@ namespace bnb::oep
 
 namespace bnb::oep
 {
-    effect_player_sptr interfaces::effect_player::create(const std::vector<std::string>& path_to_resources, const std::string& client_token)
+    effect_player_sptr interfaces::effect_player::create(int32_t width, int32_t height)
     {
-        return std::make_shared<bnb::oep::effect_player>(path_to_resources, client_token);
+        return std::make_shared<bnb::oep::effect_player>(width, height);
     }
 
-    /* effect_player::effect_player CONSTRUCTOR */
-    effect_player::effect_player(const std::vector<std::string>& path_to_resources, const std::string& client_token)
-        : m_utility(path_to_resources, client_token)
-        // the description of the passed parameters can be found at the link:
-        // https://docs.banuba.com/face-ar-sdk/generated/doxygen/html/structbnb_1_1interfaces_1_1effect__player__configuration.html#a810709129e2bc13eae190305861345ce
-        , m_ep(bnb::interfaces::effect_player::create(
-            bnb::interfaces::effect_player_configuration::create(1, 1)
-          ))
+    effect_player::effect_player(int32_t width, int32_t height)
+        : m_ep(bnb::interfaces::effect_player::create(bnb::interfaces::effect_player_configuration::create(
+            width, // fx_width - the effect's framebuffer width
+            height // fx_height - the effect's framebuffer height
+            )))
     {
     }
 
@@ -122,10 +119,10 @@ namespace bnb::oep
         m_ep->playback_stop();
     }
 
-    void effect_player::push_frame(pixel_buffer_sptr image, bnb::oep::interfaces::rotation image_orientation)
+    void effect_player::push_frame(pixel_buffer_sptr image, bnb::oep::interfaces::rotation image_orientation, bool require_mirroring)
     {
         using ns = bnb::oep::interfaces::image_format;
-        auto bnb_image_format = make_bnb_image_format(image, image_orientation);
+        auto bnb_image_format = make_bnb_image_format(image, image_orientation, require_mirroring);
         switch (image->get_image_format()) {
             case ns::bpc8_rgb:
             case ns::bpc8_bgr:
@@ -166,12 +163,9 @@ namespace bnb::oep
         }
     }
 
-    void effect_player::draw()
+    int64_t effect_player::draw()
     {
-        while (m_ep->draw() < 0) {
-            std::this_thread::yield();
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
-        }
+        return m_ep->draw();
     }
 
     void effect_player::set_render_surface(const bnb::interfaces::surface_data& data)
@@ -188,9 +182,9 @@ namespace bnb::oep
         }
     }
 
-    bnb::image_format effect_player::make_bnb_image_format(pixel_buffer_sptr image, interfaces::rotation orientation)
+    bnb::image_format effect_player::make_bnb_image_format(pixel_buffer_sptr image, interfaces::rotation orientation, bool require_mirroring)
     {
-        bnb::camera_orientation camera_orient{bnb::camera_orientation::deg_0};
+        bnb::camera_orientation camera_orient {bnb::camera_orientation::deg_0};
 
         using ns = bnb::oep::interfaces::rotation;
         switch (orientation) {
@@ -208,7 +202,7 @@ namespace bnb::oep
                 break;
         }
 
-        return {static_cast<uint32_t>(image->get_width()), static_cast<uint32_t>(image->get_height()), camera_orient, false, 0, std::nullopt};
+        return {static_cast<uint32_t>(image->get_width()), static_cast<uint32_t>(image->get_height()), camera_orient, require_mirroring, 0, std::nullopt};
     }
 
     bnb::yuv_format_t effect_player::make_bnb_yuv_format(pixel_buffer_sptr image)
