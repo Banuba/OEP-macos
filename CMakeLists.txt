@@ -27,8 +27,6 @@ set(SDK_FRAMEWORK_PATH "${CMAKE_CURRENT_LIST_DIR}/bnb_sdk/mac")
 set(FullEPFrameworkPath "${SDK_FRAMEWORK_PATH}/$(CONFIGURATION)/BanubaEffectPlayer.framework")
 add_custom_command(OUTPUT "${FullEPFrameworkPath}" COMMAND "")
 
-set(BANUBA_OEP_FRAMEWORK banuba_oep)
-
 
 set(APP_NAME "example_mac") 
 
@@ -66,7 +64,7 @@ foreach(assetItem ${RESOURCES})
 endforeach()
 set_source_files_properties(${FullEPFrameworkPath} PROPERTIES MACOSX_PACKAGE_LOCATION Frameworks)
 
-add_dependencies(${APP_NAME} ${BANUBA_OEP_FRAMEWORK})
+add_dependencies(${APP_NAME} banuba_oep)
 
 set(CMAKE_OSX_DEPLOYMENT_TARGET "10.15")
 set(CMAKE_XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC "YES")
@@ -95,16 +93,16 @@ set_target_properties(${APP_NAME} PROPERTIES
 )
 
 target_link_libraries(${APP_NAME}
-    "-framework ${BANUBA_OEP_FRAMEWORK}"
     "-framework BanubaEffectPlayer"
     "-framework Accelerate"
     "-framework Cocoa"
     "-framework Foundation"
+    banuba_oep
 )
 
 set_target_properties(${APP_NAME} PROPERTIES XCODE_ATTRIBUTE_FRAMEWORK_SEARCH_PATHS "${SDK_FRAMEWORK_PATH}/$<IF:$<CONFIG:Debug>,debug,release>")
-set_target_properties(${APP_NAME} PROPERTIES XCODE_ATTRIBUTE_HEADER_SEARCH_PATHS "$<TARGET_FILE_DIR:${BANUBA_OEP_FRAMEWORK}>/${BANUBA_OEP_FRAMEWORK}.framework/Headers")
-set_target_properties(${APP_NAME} PROPERTIES XCODE_ATTRIBUTE_OTHER_LDFLAGS "-F$<TARGET_FILE_DIR:${BANUBA_OEP_FRAMEWORK}> -lc++")
+
+set_target_properties(${APP_NAME} PROPERTIES XCODE_ATTRIBUTE_OTHER_LDFLAGS "-lc++")
 set_target_properties(${APP_NAME} PROPERTIES XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC "YES")
 
 target_link_libraries(${APP_NAME} ${OTHER_LDFLAGS})
