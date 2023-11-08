@@ -1,4 +1,4 @@
-Quick start examples for integrating [Banuba SDK on macos](https://docs.banuba.com/docs/core/effect_player).
+Quick start examples for integrating [Banuba SDK on macos](https://docs.banuba.com/face-ar-sdk-v1/core/effect_player).
 
 # Getting Started
 
