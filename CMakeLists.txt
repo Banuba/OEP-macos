@@ -24,7 +24,7 @@ add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/oep_framework)
 
 # some magic to add these files to copy phase
 set(SDK_FRAMEWORK_PATH "${CMAKE_CURRENT_LIST_DIR}/bnb_sdk/mac")
-set(FullEPFrameworkPath "${SDK_FRAMEWORK_PATH}/$(CONFIGURATION)/BanubaEffectPlayer.framework")
+set(FullEPFrameworkPath "${SDK_FRAMEWORK_PATH}/BanubaEffectPlayer.framework")
 add_custom_command(OUTPUT "${FullEPFrameworkPath}" COMMAND "")
 
 
@@ -100,7 +100,7 @@ target_link_libraries(${APP_NAME}
     banuba_oep
 )
 
-set_target_properties(${APP_NAME} PROPERTIES XCODE_ATTRIBUTE_FRAMEWORK_SEARCH_PATHS "${SDK_FRAMEWORK_PATH}/$<IF:$<CONFIG:Debug>,debug,release>")
+set_target_properties(${APP_NAME} PROPERTIES XCODE_ATTRIBUTE_FRAMEWORK_SEARCH_PATHS "${SDK_FRAMEWORK_PATH}")
 
 set_target_properties(${APP_NAME} PROPERTIES XCODE_ATTRIBUTE_OTHER_LDFLAGS "-lc++")
 set_target_properties(${APP_NAME} PROPERTIES XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC "YES")
