@@ -1,3 +1,7 @@
+## The sample is deprecated. Please, rely on [this repo](https://github.com/Banuba/quickstart-desktop-cpp) instead.
+
+---
+
 Quick start examples for integrating [Banuba SDK on macos](https://docs.banuba.com/face-ar-sdk-v1/core/effect_player).
 
 # Getting Started
